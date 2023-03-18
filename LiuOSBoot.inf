@@ -1,0 +1,67 @@
+[Defines]
+    INF_VERSION=0x00010006
+    BASE_NAME=LiuOSBoot
+    FILE_GUID=ee6dfc98-aa2f-4dbd-aa60-2cfd90f9004c
+    MODULE_TYPE=UEFI_APPLICATION
+    VERSION_STRING = 0.1
+    ENTRY_POINT = UefiMain
+
+[Sources]
+
+#UEFI总头文件
+    LiuOSBoot/Include/SysConfig/CommonHeaders.h			#共同依赖的头文件
+
+#UEFI系统BootLoader阶段的所有重要参数设置
+    LiuOSBoot/Include/SysConfig/BootLoaderConf.h			#包含图像协议和文件系统协议，系统分辨率，系统启动图像设置
+
+#UEFI系统为加载的Kernel文件进行参数传递
+    LiuOSBoot/Include/SysConfig/RunTimeKernelConf.h
+
+#UEFI系统的Kernel的ELF文件加载器
+    LiuOSBoot/Include/KernelLoader/KernelLoader.h
+    LiuOSBoot/Library/KernelLoader/KernelLoader.c
+
+#UEFI系统的通用文件加载器
+    LiuOSBoot/Include/GeneralFileLoader/GeneralFileLoader.h
+    LiuOSBoot/Library/GeneralFileLoader/GeneralFileLoader.c
+
+#UEFI系统的实用工具
+    LiuOSBoot/Include/Tools/Tools.h     #系统需要的使用工具
+    LiuOSBoot/Library/Tools/Tools.c     #系统需要的使用工具
+
+#UEFI系统的日志系统
+    LiuOSBoot/Include/SysLog/SysLog.h
+    LiuOSBoot/Library/SysLog/SysLog.c
+
+#UEFI系统BootLoader图形控制
+    LiuOSBoot/Include/SysGraphics/SysGraphics.h
+    LiuOSBoot/Library/SysGraphics/SysGraphics.c
+
+#UEFI系统启动画面的设置
+    LiuOSBoot/Include/Logo/StartLogo.h
+    LiuOSBoot/Library/Logo/StartLogo.c
+
+#UEFI系统字体位图文件加载
+    LiuOSBoot/Include/FontLoader/FontLoader.h
+    LiuOSBoot/Library/FontLoader/FontLoader.c
+
+#UEFI系统内存布局
+    LiuOSBoot/Include/Memory/GetMemoryData.h
+    LiuOSBoot/Library/Memory/GetMemoryData.c
+
+#UEFI主程序
+    LiuOSBoot/Library/main.c          
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+    UefiApplicationEntryPoint
+    UefiLib
+
+[Guids]
+    gEfiFileInfoGuid
+ 
+[BuildOptions]
+    MSFT:*_*_*_CC_FLAGS=/w
