@@ -1,29 +1,54 @@
 ﻿#ifndef _MEMORY_H_
 #define _MEMORY_H_
 #pragma once
-#include"page-table.h"
+#include"pm_statistics.h"       //物理内存数据(来自UEFI内存描述符)
+#include"paging.h"
 
 /*----------------------------------------------------------
-*引入链接文件中的重要pgd目录地址以及代码段和数据段起始终止地址
-----------------------------------------------------------*/
-extern char swapper_pg_dir[];
-extern char idmap_pg_dir[];
-extern char _data_end[],_data_start[];
-extern char  _text_start[], _text_end[];
+*物理地址转换为虚拟地址(线性映射)
+*----------------------------------------------------------*/
+#define CONFIG_ARM64_VA_BITS 48                             //开启4KB分页
+#define VA_BITS			(CONFIG_ARM64_VA_BITS)
 
-void paging_init();
+/*----------------------------------------------------------
+*线性地址空间[PAGE_OFFSET,PAGE_END)
+*----------------------------------------------------------*/
+#define PAGE_OFFSET		 ((0xffffffffffffffff) << (VA_BITS - 1)) //0xFFFF800000000000
+#define PAGE_END        (0xffffffffffffffff)                     //0xFFFFFFFFFFFFFFFF
 
-void map_kernel_segment(
-    page_global_directory *pgd,
-    char * start_addr,
-    char * end_addr
-);
+#define __is_lm_address(addr)   (((UINT64)(addr) - PAGE_OFFSET) < (PAGE_END - PAGE_OFFSET)) //是否为线性地址
 
-void __create_pgd_mapping(
-    page_global_directory *pgd,
-    phys_addr_t physical_addr,
-    phys_addr_t mapping_size,
-    unsigned long virt          //映射虚拟地址
+/*----------------------------------------------------------
+*物理地址转换线性地址[PAGE_OFFSET,PAGE_END)
+*----------------------------------------------------------*/
+#define __phys_to_virt(x)    ((unsigned long)((x) - PHYS_OFFSET) | PAGE_OFFSET)
+#define __va(x)    ((void *)__phys_to_virt((phys_addr_t)(x)))
+
+/*----------------------------------------------------------
+*线性地址[PAGE_OFFSET,PAGE_END)转换物理地址
+*----------------------------------------------------------*/
+#define __lm_to_phys(addr)	(((addr) & ~PAGE_OFFSET) + PHYS_OFFSET)
+#define __kimg_to_phys(addr)	((addr) - kimage_voffset)
+
+#define __virt_to_phys(x) ({					\
+	phys_addr_t __x = (phys_addr_t)(x);				\
+	__is_lm_address(__x) ? __lm_to_phys(__x) :			\
+			       __kimg_to_phys(__x);			\
+})
+
+#define __pa(x) __virt_to_phys((unsigned long)(x)) 
+
+
+/*-----------------------------------------------------------------------------
+* 操作系统内部初始化UEFI内存布局模型
+* @name: mm_init
+* @function: 操作系统内部初始化UEFI内存布局模型
+* @param : 1.读取UEFI传输给操作系统的参数中内存布局部分参数
+* @retValue: 返回操作系统内存是否初始化成功
+*------------------------------------------------------------------------------*/
+Bool
+mm_init(
+    MEMORY_MAP_CONFIG *memory_map
 );
 
 

@@ -7,7 +7,6 @@ typedef UINT64 pteval_t;        //PTE
 typedef UINT64 pmdval_t;        //PMD
 typedef UINT64 pudval_t;        //PUD
 typedef UINT64 pgdval_t;        //PGD
-
 typedef UINT32 phys_addr_t;     //物理地址
 
 /*-----------------------------------------------------------------
@@ -25,6 +24,7 @@ typedef struct page_global_directory{
 #define PGDIR_SIZE	(1UL << PGDIR_SHIFT)                        //PGD页表项所能映射的区域
 #define PGDIR_MASK	(~(PGDIR_SIZE-1))                           //屏蔽其他的目录的干扰
 #define PTRS_PER_PGD (1 << (MAX_USER_VA_BITS - PGDIR_SHIFT))    //PGD页表中页表项的个数
+#define pgd_index(virt)		(((virt) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))
 
 /*-----------------------------------------------------------------
 *页上级目录Page Upper Directory(L1)
@@ -88,5 +88,22 @@ TB   - table descriptor bit
 VB   - validity descriptor bit
 *-----------------------------------------------------------------*/
 
+/*-----------------------------------------------------------------------------
+* 创建PGD(L0)的页表映射
+* @name: __create_pgd_mapping
+* @function: 创建PGD(L0)的页表映射
+* @param : 1.全局目录PGD(Kernel为swapper_pg_dir)
+           2.物理地址
+           3.地址长度
+           4.映射虚拟地址
+           5.一个页面的分配方式
+*------------------------------------------------------------------------------*/
+void __create_pgd_mapping(
+    page_global_directory *pgd,
+    phys_addr_t physical_addr,
+    phys_addr_t mapping_size,
+    unsigned long virt,                 //映射虚拟地址
+    phys_addr_t (*alloc_method)(void)    //页表PDG的分配方式	
+);
 
 #endif //_PAGETABLE_H_

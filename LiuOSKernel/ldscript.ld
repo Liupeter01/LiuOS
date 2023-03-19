@@ -1,9 +1,11 @@
 /*OUTPUT(aarch64)*/
+/*ENTRY(_start)*/
 ENTRY(_start)
 SECTIONS
 {
     /*在开启MMU之前严禁使用0XFFFF000000000000以上的地址*/
     . = 0XFFFF000000400000;
+    _here = .;
     .text.boot : {*(.text.boot)}
 
     _text_start = . ;    /*代码段起始地址*/
@@ -22,6 +24,9 @@ SECTIONS
     . += 4096 ;
     swapper_pg_dir = . ;
     . += 4096 ;
+    swapper_pg_end = . ;
+
+    . = ALIGN(0x00200000);
 
     .bss : { *(.bss)  }
 }

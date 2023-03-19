@@ -1,7 +1,6 @@
 #include"video.h"
 #include"console.h"
 #include"memory.h"
-#include"mm_init.h"
 
 /*-----------------------------------------------------------------------------
 * 操作系统入口点

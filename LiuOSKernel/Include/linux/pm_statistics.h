@@ -1,8 +1,7 @@
-﻿#ifndef _MM_H_
-#define _MM_H_
+﻿#ifndef _PM_STATISTICS_H_
+#define _PM_STATISTICS_H_
 #pragma once
-#include"mm_struct.h"
-#include"memory.h"
+#include"pm_struct.h"
 
 /*-----------------------------------------------------------------------------
 *将字节转换为页面数量
@@ -30,17 +29,4 @@ locate_conventional_space(
     MEMORY_MAP_CONFIG* memory_map
 );
 
-/*-----------------------------------------------------------------------------
-* 操作系统内部初始化UEFI内存布局模型
-* @name: mm_init
-* @function: 操作系统内部初始化UEFI内存布局模型
-* @param : 1.读取UEFI传输给操作系统的参数中内存布局部分参数
-* @retValue: 返回操作系统内存是否初始化成功
-*------------------------------------------------------------------------------*/
-Bool
-mm_init(
-    MEMORY_MAP_CONFIG *memory_map
-);
-
-
-#endif //_MM_H_
+#endif //_PM_STATISTICS_H_

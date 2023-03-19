@@ -1,11 +1,11 @@
-﻿#include"mm_init.h"
+﻿#include"pm_statistics.h"
 
 MEMORY_INIT_STRUCT g_MemoryInitStruct = {   //全局内核BootLoader内存参数
 	.m_UefiDesciptorCount = 0,				//内存描述符存储数组元素个数
 	.m_DescriptorArray = NULL				//内存描述符存储数组
 };
 
-MM_STRUCT g_MemoryDistribution = {			//用于描述内存布局信息结构的数组和大小
+PHYSICAL_MEMORY_STATISTICS g_MemoryDistribution = {			//用于描述内存布局信息结构的数组和大小
 	.m_infoArr = NULL,           			//描述内存信息结构的数组
 	.m_infoCount = 0                    	//描述内存信息结构的数组索引总数
 };
@@ -41,12 +41,12 @@ locate_conventional_space(
 }
 
 /*-----------------------------------------------------------------------------
-* 使用内存描述符初始化内存布局信息结构(MM_STRUCT)
-* @name: init_mm_struct
-* @function: 使用内存描述符初始化内存布局信息结构(MM_STRUCT)
+* 使用UEFI内存描述符初始化物理内存的页面信息( PHYSICAL_MEMORY_STATISTICS)
+* @name: init_pm_statistics
+* @function: 使用UEFI内存描述符初始化物理内存的页面信息(PHYSICAL_MEMORY_STATISTICS)
 *------------------------------------------------------------------------------*/
-void 
-init_mm_struct()
+void
+init_pm_statistics()
 {
 	int m_infoCount = 0;													//定义计数变量
 	NEW_MEMORY_DESCRIPTOR* src = g_MemoryInitStruct.m_DescriptorArray;
@@ -73,12 +73,12 @@ init_mm_struct()
 }
 
 /*-----------------------------------------------------------------------------
-* 打印内存布局信息结构的数组(DEBUG专用)
-* @name: debug_mm_struct
-* @function: 打印内存布局信息结构的数组(DEBUG专用)
+* 打印物理内存的页面信息结构的数组(DEBUG专用)
+* @name: debug_pm_statistics
+* @function: 打印物理内存的页面信息结构的数组(DEBUG专用)
 *------------------------------------------------------------------------------*/
-void 
-debug_mm_struct()
+void
+debug_pm_statistics()
 {
 	unsigned long long to = 0;
 	char str[256] = {0};
@@ -107,27 +107,4 @@ debug_mm_struct()
 	itoa(CONVERT_PAGES_TO_BYTES(to)>>20,str+strlen(str),10);
 	strcat(str," MB\n");
 	console_puts(str);
-}
-
-/*-----------------------------------------------------------------------------
-* 操作系统内部初始化UEFI内存布局模型
-* @name: mm_init
-* @function: 操作系统内部初始化UEFI内存布局模型
-* @param : 1.读取UEFI传输给操作系统的参数中内存布局部分参数
-* @retValue: 返回操作系统内存是否初始化成功
-*------------------------------------------------------------------------------*/
-Bool 
-mm_init(MEMORY_MAP_CONFIG* memory_map)
-{
-	/*接收来自内核BootLoader内存参数传递*/
-	g_MemoryInitStruct.m_DescriptorArray = (NEW_MEMORY_DESCRIPTOR*)memory_map->m_MemoryMap; 			  //内存描述符存储数组
-	g_MemoryInitStruct.m_UefiDesciptorCount = memory_map->m_MemoryMapSize / memory_map->m_DescriptorSize; //内存描述符存储数组元素个数
-
-	if(!locate_conventional_space(memory_map)){							//寻找可用空间容纳内存布局信息结构(MM_STRUCT)
-		return FALSE;
-	}		
-	init_mm_struct();													//使用内存描述符初始化内存布局信息结构(MM_INFORMATION)
-	debug_mm_struct();													//输出内存调试信息
-	paging_init();														//启动分页
-	return TRUE;
 }

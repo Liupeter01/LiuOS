@@ -55,25 +55,25 @@ typedef struct MEMORY_INIT_STRUCT
 } __attribute__((__aligned__(1))) MEMORY_INIT_STRUCT;
 
 /*-----------------------------------------------------------------
- *内存布局信息结构(鉴于内核BootLoader内存参数基础上)(1B对齐)
+ *物理内存布局信息结构(鉴于内核BootLoader内存参数基础上)(4B对齐)
 *-----------------------------------------------------------------*/
-#pragma pack(1)
+#pragma pack(4)
 typedef struct MM_INFORMATION{              //用于形容每一个内存孔洞的参数信息
   UINT32                Type;               //内存类型数据
   EFI_PHYSICAL_ADDRESS  PhysicalStart;      //物理起始地址
   UINT64                NumberOfPages;      //页面数量
-}__attribute__((__aligned__(1))) MM_INFORMATION;
+}__attribute__((__aligned__(4))) MM_INFORMATION;
 
 /*-----------------------------------------------------------------
- *用于描述内存布局信息结构的数组和大小(1B对齐)
+ *用于描述物理内存的页面信息用于初始化后续虚拟地址(4B对齐)
 *-----------------------------------------------------------------*/
-#pragma pack(1)
-typedef struct MM_STRUCT{                   //用于描述内存布局信息结构的数组和大小
+#pragma pack(4)
+typedef struct PHYSICAL_MEMORY_STATISTICS{  //用于描述物理内存的页面信息
   int m_infoCount;                          //描述内存信息结构的数组索引总数
   MM_INFORMATION * m_infoArr;               //描述内存信息结构的数组
-}__attribute__((__aligned__(1))) MM_STRUCT;
+}__attribute__((__aligned__(4))) PHYSICAL_MEMORY_STATISTICS;
 
-extern MM_STRUCT g_MemoryDistribution ;      //内存分布
+extern PHYSICAL_MEMORY_STATISTICS g_MemoryDistribution ;      //内存分布
 extern MEMORY_INIT_STRUCT g_MemoryInitStruct;//专门用于读取信息
 
 
@@ -119,18 +119,18 @@ extern MEMORY_INIT_STRUCT g_MemoryInitStruct;//专门用于读取信息
 })
 
 /*-----------------------------------------------------------------------------
-* 使用内存描述符初始化内存布局信息结构(MM_STRUCT)
-* @name: init_mm_struct
-* @function: 使用内存描述符初始化内存布局信息结构(MM_STRUCT)
+* 使用UEFI内存描述符初始化物理内存的页面信息( PHYSICAL_MEMORY_STATISTICS)
+* @name: init_pm_statistics
+* @function: 使用UEFI内存描述符初始化物理内存的页面信息(PHYSICAL_MEMORY_STATISTICS)
 *------------------------------------------------------------------------------*/
-void init_mm_struct();
+void init_pm_statistics();
 
 /*-----------------------------------------------------------------------------
-* 打印内存布局信息结构的数组(DEBUG专用)
-* @name: debug_mm_struct
-* @function: 打印内存布局信息结构的数组(DEBUG专用)
+* 打印物理内存的页面信息结构的数组(DEBUG专用)
+* @name: debug_pm_statistics
+* @function: 打印物理内存的页面信息结构的数组(DEBUG专用)
 *------------------------------------------------------------------------------*/
-void debug_mm_struct();
+void debug_pm_statistics();
 
 /*-----------------------------------------------------------------------------
 * 获取当前UEFI内存的类型
