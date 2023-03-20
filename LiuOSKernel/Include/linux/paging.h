@@ -3,16 +3,6 @@
 #pragma once
 #include"page-table.h"
 
-/*----------------------------------------------------------
-*引入链接文件中的重要pgd目录地址以及代码段和数据段起始终止地址
-*----------------------------------------------------------*/
-extern char swapper_pg_dir[];
-extern char idmap_pg_dir[];
-extern char _data_start[],_data_end[];
-extern char _text_start[], _text_end[];
-extern char _rodata_start[], _rodata_end[];
-extern char _here[];
-
 /*-----------------------------------------------------------------------------
 * 操作系统初始化内存分页
 * @name: paging_init

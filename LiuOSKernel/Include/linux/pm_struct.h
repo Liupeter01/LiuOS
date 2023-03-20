@@ -3,6 +3,9 @@
 #pragma once
 
 #include"type.h"
+
+#define PAGE_SIZE 4096
+
 /*------------------------------------------------------------
 typedef enum {
   EfiReservedMemoryType,           os_memory_uefi
@@ -119,6 +122,13 @@ extern MEMORY_INIT_STRUCT g_MemoryInitStruct;//专门用于读取信息
 })
 
 /*-----------------------------------------------------------------------------
+* 根据物理内存占用信息结构重新计算物理内存占用
+* @name: calculate_pm_statistics
+* @function: 根据物理内存占用信息结构重新计算物理内存占用，并排序
+*------------------------------------------------------------------------------*/
+void recalculate_pm_statistics();
+
+/*-----------------------------------------------------------------------------
 * 使用UEFI内存描述符初始化物理内存的页面信息( PHYSICAL_MEMORY_STATISTICS)
 * @name: init_pm_statistics
 * @function: 使用UEFI内存描述符初始化物理内存的页面信息(PHYSICAL_MEMORY_STATISTICS)
@@ -146,4 +156,5 @@ getUefiMemoryType(
     UINTN size,
     const UINTN Type
 );
+
 #endif //_MM_STRUCT_H_

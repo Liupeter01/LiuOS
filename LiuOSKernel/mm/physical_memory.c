@@ -41,24 +41,58 @@ locate_conventional_space(
 }
 
 /*-----------------------------------------------------------------------------
+* 根据物理内存占用信息结构重新计算物理内存占用
+* @name: recalculate_pm_statistics
+* @function: 根据物理内存占用信息结构重新计算物理内存占用，并排序
+*------------------------------------------------------------------------------*/
+void recalculate_pm_statistics()
+{
+	int arrayCount =  g_MemoryDistribution.m_infoCount;						//MM_INFORMATION结构的数量
+	MM_INFORMATION* mm = g_MemoryDistribution.m_infoArr;			        //物理内存占用信息结构首地址
+	MM_INFORMATION tempTailInsert = {										//将剩余的内存在尾部进行初始化
+		.Type = OS_MEMORY_UNUSED,              //内存类型数据
+  		.PhysicalStart = 0,      //物理起始地址
+  		.NumberOfPages = 0      //页面数量
+	};
+	for(int i = 0 ; i < arrayCount ; ++i){
+		if(mm[i].Type == OS_MEMORY_UNUSED &&					//找到为当前内存分配空间的地方
+			mm[i].PhysicalStart <= (EFI_PHYSICAL_ADDRESS)mm &&
+			mm[i].PhysicalStart + CONVERT_PAGES_TO_BYTES(mm[i].NumberOfPages) > (EFI_PHYSICAL_ADDRESS)mm)
+		{				
+
+			int occupiedPages = CONVERT_BYTES_TO_PAGES(sizeof(MM_INFORMATION) * (arrayCount+1) ); //统计当前结构占用页面数量
+			tempTailInsert.Type = mm[i].Type;												//记录原始类型
+			tempTailInsert.NumberOfPages = mm[i].NumberOfPages - occupiedPages;				//剩余内存为空闲内存
+			tempTailInsert.PhysicalStart = mm[i].PhysicalStart + CONVERT_PAGES_TO_BYTES(occupiedPages);	//新内存开始地址
+			mm[i].Type = OS_MEMORY_USED;													//内存已经被占用
+			mm[i].NumberOfPages = occupiedPages;											//更新当前内存段的占用情况
+			
+			mm[arrayCount].Type =  tempTailInsert.Type;										//在尾部添加一个新块
+			mm[arrayCount].PhysicalStart = tempTailInsert.PhysicalStart;
+			mm[arrayCount].NumberOfPages = tempTailInsert.NumberOfPages;
+			g_MemoryDistribution.m_infoCount = arrayCount + 1;								//更新总数
+			break;
+		}
+	}
+}
+
+/*-----------------------------------------------------------------------------
 * 使用UEFI内存描述符初始化物理内存的页面信息( PHYSICAL_MEMORY_STATISTICS)
 * @name: init_pm_statistics
 * @function: 使用UEFI内存描述符初始化物理内存的页面信息(PHYSICAL_MEMORY_STATISTICS)
+* @update: 
+			2023-3-20 修复了原先对于PHYSICAL_MEMORY_STATISTICS结构存储位置判断逻辑的BUG
 *------------------------------------------------------------------------------*/
 void
 init_pm_statistics()
 {
 	int m_infoCount = 0;													//定义计数变量
-	NEW_MEMORY_DESCRIPTOR* src = g_MemoryInitStruct.m_DescriptorArray;
-	MM_INFORMATION* mm_dst = g_MemoryDistribution.m_infoArr;			    //内存布局信息结构目的地址
+	NEW_MEMORY_DESCRIPTOR* src = g_MemoryInitStruct.m_DescriptorArray;		//拷贝源
+	MM_INFORMATION* mm_dst = g_MemoryDistribution.m_infoArr;			    //物理内存占用信息结构目的地址
 	for(int i = 0 ; i < g_MemoryInitStruct.m_UefiDesciptorCount ;++i){
 		SET_MEMORY_TYPE(&src[i],mm_dst);
-		if(GET_MEMORY_TYPE(&src[i]) == OS_MEMORY_UNUSED && 					//额外处理内存信息结构的内存并标记为已经占用g_MemoryDistribution.m_infoArr
-			src[i].PhysicalStart == (EFI_PHYSICAL_ADDRESS)g_MemoryDistribution.m_infoArr){
-			mm_dst->Type = OS_MEMORY_USED;									//修正当前部分内存为已经使用
-		}
 		mm_dst->PhysicalStart = src[i].PhysicalStart;      					//物理起始地址
-		mm_dst->NumberOfPages = src[i].NumberOfPages;      					//页面数量
+		mm_dst->NumberOfPages = src[i].NumberOfPages;      					//页面数量	
 		if(i && mm_dst->Type == (mm_dst - 1)->Type){						//上一个和当前内存布局结构类型
 			if(mm_dst->PhysicalStart ==  (mm_dst - 1)->PhysicalStart + CONVERT_PAGES_TO_BYTES((mm_dst - 1)->NumberOfPages))
 			{
@@ -70,6 +104,7 @@ init_pm_statistics()
 		m_infoCount++;														//自增描述内存信息结构的数组索引总数
 	}	
 	g_MemoryDistribution.m_infoCount = m_infoCount;							//获取
+	recalculate_pm_statistics();
 }
 
 /*-----------------------------------------------------------------------------

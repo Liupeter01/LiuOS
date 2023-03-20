@@ -25,11 +25,11 @@ paging_init()
     }
     */
     /*将内核文件代码段.text映射到swapper_pg_dir PGD*/
-    map_kernel_segment(swapper_pg_dir, (void*)_text_start, (void*)_text_end, NULL);
+    map_kernel_segment((page_global_directory *)swapper_pg_dir, (void*)_text_start, (void*)_text_end, NULL);
     /*将内核文件只读数据段.rodata区映射到swapper_pg_dir PGD*/
-    map_kernel_segment(swapper_pg_dir, (void*)_rodata_start, (void*)_rodata_end, NULL);
+    map_kernel_segment((page_global_directory *)swapper_pg_dir, (void*)_rodata_start, (void*)_rodata_end, NULL);
     /*将内核文件数据段.data映射到swapper_pg_dir PGD*/
-    map_kernel_segment(swapper_pg_dir, (void*)_data_start, (void*)_data_end, NULL);
+    map_kernel_segment((page_global_directory *)swapper_pg_dir, (void*)_data_start, (void*)_data_end, NULL);
 }
 
 /*-----------------------------------------------------------------------------

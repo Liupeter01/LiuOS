@@ -1,10 +1,9 @@
 /*OUTPUT(aarch64)*/
-/*ENTRY(_start)*/
 ENTRY(_start)
 SECTIONS
 {
     /*在开启MMU之前严禁使用0XFFFF000000000000以上的地址*/
-    . = 0XFFFF000000400000;
+    /*. = 0XFFFF000000400000;*/
     _here = .;
     .text.boot : {*(.text.boot)}
 
@@ -18,15 +17,25 @@ SECTIONS
 
     _data_start = . ;    /*数据段起始地址*/
     .data : {*(.data) }
-    _data_end = .;      /*数据段终止地址*/
 
-    idmap_pg_dir = . ;
-    . += 4096 ;
+    . = ALIGN(4096);
+
+	idmap_pg_dir = .;
+	. += 4 * 4096;          /*IDMAP_PGTABLE_LEVELS * PAGE_SIZE(共四个页表PGD,PUD,PMD,PTE)*/
+	idmap_pg_end = .;
+
+	. = ALIGN(4096);
+	/*init_pg_dir = .;
+	. += INIT_DIR_SIZE;
+	init_pg_end = .;
+    . = ALIGN(4096);*/
+
     swapper_pg_dir = . ;
     . += 4096 ;
     swapper_pg_end = . ;
-
-    . = ALIGN(0x00200000);
+    _data_end = .;      /*数据段终止地址*/
 
     .bss : { *(.bss)  }
+    . = ALIGN(0x00200000);
+
 }

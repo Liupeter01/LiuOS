@@ -1,7 +1,6 @@
 ﻿#ifndef _MEMORY_H_
 #define _MEMORY_H_
 #pragma once
-#include"pm_statistics.h"       //物理内存数据(来自UEFI内存描述符)
 #include"paging.h"
 
 /*----------------------------------------------------------
