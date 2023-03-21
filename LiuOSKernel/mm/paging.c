@@ -9,10 +9,10 @@
 Bool 
 paging_init()
 {
-    init_memory_bitmap();               //初始化物理内存分配的位图
-    create_identical_mapping();         //创建内核的恒等映射
-    create_mmio_mapping();              //创建MMIO的恒等映射
-
+    //init_memory_bitmap();               //初始化物理内存分配的位图
+    //create_identical_mapping();         //创建内核的恒等映射
+    //create_mmio_mapping();              //创建MMIO的恒等映射
+    /*
     init_cpu();                         //检查并初始化基础设置
     if(enable_mmu(idmap_pg_dir)){                   //开启MMU
         console_puts("[paging module SUCCESSED]:enable mmu successed!\n");
@@ -21,6 +21,7 @@ paging_init()
         console_puts("[paging module FAILED]:enable mmu FAILED!\n");
         return;
     }
+    */
     /*将内核文件代码段.text映射到swapper_pg_dir PGD*/
     map_kernel_segment((page_global_directory *)swapper_pg_dir, (void*)_text_start, (void*)_text_end, NULL);
     /*将内核文件只读数据段.rodata区映射到swapper_pg_dir PGD*/

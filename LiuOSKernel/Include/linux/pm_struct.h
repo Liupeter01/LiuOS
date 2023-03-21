@@ -59,21 +59,21 @@ typedef struct MEMORY_INIT_STRUCT
 /*-----------------------------------------------------------------
  *物理内存布局信息结构(鉴于内核BootLoader内存参数基础上)(4B对齐)
 *-----------------------------------------------------------------*/
-#pragma pack(4)
+#pragma pack(1)
 typedef struct MM_INFORMATION{              //用于形容每一个内存孔洞的参数信息
   UINT32                Type;               //内存类型数据
   EFI_PHYSICAL_ADDRESS  PhysicalStart;      //物理起始地址
   UINT64                NumberOfPages;      //页面数量
-}__attribute__((__aligned__(4))) MM_INFORMATION;
+}__attribute__((__aligned__(1))) MM_INFORMATION;
 
 /*-----------------------------------------------------------------
  *用于描述物理内存的页面信息用于初始化后续虚拟地址(4B对齐)
 *-----------------------------------------------------------------*/
-#pragma pack(4)
+#pragma pack(1)
 typedef struct PHYSICAL_MEMORY_STATISTICS{  //用于描述物理内存的页面信息
   int m_infoCount;                          //描述内存信息结构的数组索引总数
   MM_INFORMATION * m_infoArr;               //描述内存信息结构的数组
-}__attribute__((__aligned__(4))) PHYSICAL_MEMORY_STATISTICS;
+}__attribute__((__aligned__(1))) PHYSICAL_MEMORY_STATISTICS;
 
 extern PHYSICAL_MEMORY_STATISTICS g_MemoryDistribution ;      //内存分布
 extern MEMORY_INIT_STRUCT g_MemoryInitStruct;//专门用于读取信息
@@ -131,8 +131,13 @@ void recalculate_pm_statistics();
 * 使用UEFI内存描述符初始化物理内存的页面信息( PHYSICAL_MEMORY_STATISTICS)
 * @name: init_pm_statistics
 * @function: 使用UEFI内存描述符初始化物理内存的页面信息(PHYSICAL_MEMORY_STATISTICS)
+* @param:  1.内存描述符存储数组
+           2.内存描述符存储数组元素个数
 *------------------------------------------------------------------------------*/
-void init_pm_statistics();
+void init_pm_statistics(
+    NEW_MEMORY_DESCRIPTOR *DescriptorArray,
+    UINTN UefiDesciptorCount
+);
 
 /*-----------------------------------------------------------------------------
 * 打印物理内存的页面信息结构的数组(DEBUG专用)

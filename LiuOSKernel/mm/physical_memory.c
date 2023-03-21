@@ -5,7 +5,7 @@ MEMORY_INIT_STRUCT g_MemoryInitStruct = {   //全局内核BootLoader内存参数
 	.m_DescriptorArray = NULL				//内存描述符存储数组
 };
 
-PHYSICAL_MEMORY_STATISTICS g_MemoryDistribution = {			//用于描述内存布局信息结构的数组和大小
+PHYSICAL_MEMORY_STATISTICS g_MemoryDistribution = {//用于描述内存布局信息结构的数组和大小
 	.m_infoArr = NULL,           			//描述内存信息结构的数组
 	.m_infoCount = 0                    	//描述内存信息结构的数组索引总数
 };
@@ -73,27 +73,33 @@ UINT64 early_pagetable_alloc()
 }
 
 /*-----------------------------------------------------------------------------
-* 为内存布局信息结构(MM_STRUCT)寻找空闲空间
+* 寻找可用空间容纳内存布局信息结构PHYSICAL_MEMORY_STATISTICS
 * @name: locate_conventional_space
 * @function: 在UEFI所传递的内存描述符元素中寻找可以容纳MM_INFORMATION的区域
 * @param : 1.读取UEFI传输给操作系统的参数中内存布局部分参数
+           2.内存描述符存储数组
+           3.内存描述符存储数组元素个数
+
 * @retValue: 返回操作系统内存是否初始化成功
 *------------------------------------------------------------------------------*/
 Bool 
 locate_conventional_space(
-	MEMORY_MAP_CONFIG* memory_map)
+    MEMORY_MAP_CONFIG* memory_map,
+    NEW_MEMORY_DESCRIPTOR *DescriptorArray,
+    UINTN UefiDesciptorCount
+)
 {
 	Bool isMemoryDistributionFounded = FALSE;			//是否找到合适的内存
-	for (int i = 0; i < g_MemoryInitStruct.m_UefiDesciptorCount; ++i) {
+	for (int i = 0; i < UefiDesciptorCount; ++i) {
 		/*---------------------------------------------------------------------
 		*内存类型为空闲内存EfiConventionalMemory，且内存描述符的页面大小满足最低要求
 		---------------------------------------------------------------------*/
-		if (g_MemoryInitStruct.m_DescriptorArray[i].Type == EfiConventionalMemory &&
-			g_MemoryInitStruct.m_DescriptorArray[i].PhysicalStart > LOW_MEMORY &&
-			g_MemoryInitStruct.m_DescriptorArray[i].NumberOfPages > CONVERT_BYTES_TO_PAGES(memory_map->m_MemoryMapSize))
+		if (DescriptorArray[i].Type == EfiConventionalMemory &&
+			//g_MemoryInitStruct.m_DescriptorArray[i].PhysicalStart > LOW_MEMORY &&
+			DescriptorArray[i].NumberOfPages > CONVERT_BYTES_TO_PAGES(memory_map->m_MemoryMapSize))
 		{
 			isMemoryDistributionFounded = TRUE;
-			g_MemoryDistribution.m_infoArr = (MM_INFORMATION*)g_MemoryInitStruct.m_DescriptorArray[i].PhysicalStart;	//将内存地址挂载映射
+			g_MemoryDistribution.m_infoArr = (MM_INFORMATION*)DescriptorArray[i].PhysicalStart;	//将内存地址挂载映射
 			break;
 		}
 	}
@@ -167,16 +173,19 @@ void recalculate_pm_statistics()
 * 使用UEFI内存描述符初始化物理内存的页面信息( PHYSICAL_MEMORY_STATISTICS)
 * @name: init_pm_statistics
 * @function: 使用UEFI内存描述符初始化物理内存的页面信息(PHYSICAL_MEMORY_STATISTICS)
-* @update: 
-			2023-3-20 修复了原先对于PHYSICAL_MEMORY_STATISTICS结构存储位置判断逻辑的BUG
+* @param:  1.内存描述符存储数组
+           2.内存描述符存储数组元素个数
 *------------------------------------------------------------------------------*/
-void
-init_pm_statistics()
+void 
+init_pm_statistics(
+    NEW_MEMORY_DESCRIPTOR *DescriptorArray,
+    UINTN UefiDesciptorCount
+)
 {
 	int m_infoCount = 0;													//定义计数变量
-	NEW_MEMORY_DESCRIPTOR* src = g_MemoryInitStruct.m_DescriptorArray;		//拷贝源
+	NEW_MEMORY_DESCRIPTOR* src = DescriptorArray;		//拷贝源
 	MM_INFORMATION* mm_dst = g_MemoryDistribution.m_infoArr;			    //物理内存占用信息结构目的地址
-	for(int i = 0 ; i < g_MemoryInitStruct.m_UefiDesciptorCount ;++i){
+	for(int i = 0 ; i < UefiDesciptorCount ;++i){
 		SET_MEMORY_TYPE(&src[i],mm_dst);
 		mm_dst->PhysicalStart = src[i].PhysicalStart;      					//物理起始地址
 		mm_dst->NumberOfPages = src[i].NumberOfPages;      					//页面数量	
@@ -191,6 +200,7 @@ init_pm_statistics()
 		m_infoCount++;														//自增描述内存信息结构的数组索引总数
 	}	
 	g_MemoryDistribution.m_infoCount = m_infoCount;							//获取
+	console_puts("init_pm_statistics\n");
 	recalculate_pm_statistics();
 }
 

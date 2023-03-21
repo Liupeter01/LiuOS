@@ -33,11 +33,16 @@ getUefiMemoryType(
 * @name: locate_conventional_space
 * @function: 在UEFI所传递的内存描述符元素中寻找可以容纳MM_INFORMATION的区域
 * @param : 1.读取UEFI传输给操作系统的参数中内存布局部分参数
+           2.内存描述符存储数组
+           3.内存描述符存储数组元素个数
+
 * @retValue: 返回操作系统内存是否初始化成功
 *------------------------------------------------------------------------------*/
 Bool 
 locate_conventional_space(
-    MEMORY_MAP_CONFIG* memory_map
+    MEMORY_MAP_CONFIG* memory_map,
+    NEW_MEMORY_DESCRIPTOR *DescriptorArray,
+    UINTN UefiDesciptorCount
 );
 
 #endif //_PM_STATISTICS_H_

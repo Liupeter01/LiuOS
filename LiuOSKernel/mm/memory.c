@@ -11,14 +11,16 @@ Bool
 mm_init(MEMORY_MAP_CONFIG* memory_map)
 {
 	/*接收来自内核BootLoader内存参数传递*/
-	g_MemoryInitStruct.m_DescriptorArray = (NEW_MEMORY_DESCRIPTOR*)memory_map->m_MemoryMap; 			  //内存描述符存储数组
-	g_MemoryInitStruct.m_UefiDesciptorCount = memory_map->m_MemoryMapSize / memory_map->m_DescriptorSize; //内存描述符存储数组元素个数
-
-	if(!locate_conventional_space(memory_map)){							//寻找可用空间容纳内存布局信息结构(MM_STRUCT)
+	NEW_MEMORY_DESCRIPTOR* BootStart = (NEW_MEMORY_DESCRIPTOR*)memory_map->m_MemoryMap;
+	UINTN BootSize = memory_map->m_MemoryMapSize / memory_map->m_DescriptorSize;
+	if(!locate_conventional_space(memory_map, BootStart, BootSize)){	 //寻找可用空间容纳内存布局信息结构(MM_STRUCT)
 		return FALSE;
 	}		
-	init_pm_statistics();												//使用内存描述符初始化内存布局信息结构(MM_INFORMATION)
+	init_pm_statistics(
+		BootStart,
+		BootSize
+	);												//使用内存描述符初始化内存布局信息结构(MM_INFORMATION)
 	debug_pm_statistics();												//输出内存调试信息
-	paging_init();														//启动分页
+	//paging_init();														//启动分页
 	return TRUE;
 }
