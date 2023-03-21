@@ -23,17 +23,34 @@
  *
 -----------------------------------------------------------------*/
 #define __pgd_to_phys(pgd) __pte_to_phys(pgd_pte(pgd))                    //PGD页表项中内容转换物理地址
+#define __pud_to_phys(pud) __pte_to_phys(pud_pte(pud))                    //PUD页表项中内容转换物理地址
+#define __pmd_to_phys(pmd) __pte_to_phys(pmd_pte(pmd))                    //PMD页表项中内容转换物理地址
 
 /*-----------------------------------------------------------------------------
 * 
-* @name: 
+* @name: pgd_page_to_physical_address
 * @function: 
 *------------------------------------------------------------------------------*/
 phys_addr_t pgd_page_to_physical_address(page_global_directory pgd);
 
 /*-----------------------------------------------------------------------------
 * 
-* @name: 
+* @name: pud_page_to_physical_address
+* @function: 
+*------------------------------------------------------------------------------*/
+phys_addr_t pud_page_to_physical_address(page_upper_directory pud);
+
+/*-----------------------------------------------------------------------------
+* 
+* @name: pmd_page_to_physical_address
+* @function: 
+*------------------------------------------------------------------------------*/
+phys_addr_t pmd_page_to_physical_address(page_middle_directory pmd);
+
+
+/*-----------------------------------------------------------------------------
+* 
+* @name: pgd_pte
 * @function: 
 *------------------------------------------------------------------------------*/
 page_table_entry pgd_pte(page_global_directory pgd);

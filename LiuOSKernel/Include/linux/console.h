@@ -4,8 +4,8 @@
 #include"type.h"
 #include"FontLoader.h"      //获取字体文件的数据结构
 #include"StartLogo.h"       //获取BMP文件的数据结构
-#include"console_struct.h"
 #include"video.h"
+
 
 /*-----------------------------------------------------------------------------
 * 操作系统内部初始化基础Console字符输出

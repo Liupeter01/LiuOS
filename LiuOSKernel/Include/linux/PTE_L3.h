@@ -22,13 +22,6 @@ typedef struct page_table_entry{
 #define __pte(x)	((page_table_entry) { (x) } )
 
 /*-----------------------------------------------------------------
-*PTE数值和页表的互相转化
-*-----------------------------------------------------------------*/
-#define __pte_to_phys(pte)	(pte_val(pte) & PTE_ADDR_MASK)      //PTE数值转换物理地址
-#define __phys_to_pte_val(phys)	(phys)                          //PTE物理地址转换数值
-
-
-/*-----------------------------------------------------------------
 *页表PTE(L3)的高位属性和低位属性
 +---+--------+-----+-----+---+------------------------+---+----+----+----+----+------+----+----+
 | R |   SW   | UXN | PXN | R | Output address [47:12] | R | AF | SH | AP | NS | INDX | TB | VB |
@@ -73,6 +66,65 @@ VB   - validity descriptor bit
 
 #define PTE_MAYBE_NG		(PTE_NG)
 
-void alloc_pgtable();
+/*-----------------------------------------------------------------
+*用于服务PUD页表功能函数的宏定义
+-----------------------------------------------------------------*/
+#define pte_index(virt)	(((virt) >> PTE_SHIFT) & (PTRS_PER_PTE - 1))  //PTE页表项的索引功能
+
+/*PTE数值和页表的互相转化*/
+#define __pte_to_phys(pte)	(pte_val(pte) & PTE_ADDR_MASK)      //PTE数值转换物理地址
+#define __phys_to_pte_val(phys)	(phys)                          //PTE物理地址转换数值
+
+/*物理地址转化页面同时清除垃圾信息*/
+#define __phys_to_pageN(paddr) ((unsigned long)((paddr) >> PAGE_SHIFT))
+
+/*先清除PTE页表项的垃圾数据，并将PGD属性加入到页表中*/
+#define __pte_add_attribute(paddr,attribute)   __pte( __phys_to_pte_val(( __phys_to_pageN(paddr) << PAGE_SHIFT ) | (attribute)))
+
+/*PTE页表是否抵达最底端(PTE是否越界)*/    
+#define is_pte_arrive_end(virt,end_virt) ({ \
+	unsigned long __boundary = ((virt) + PAGE_SIZE) & PAGE_MASK;	\
+	(((__boundary) - 1) < ((end_virt) - 1))? (__boundary): (end_virt);	\
+})
+
+/*-----------------------------------------------------------------------------
+* 创建PTE(L3)的页表映射
+* @name: alloc_pgtable_pte
+* @function: 1.
+             2.填充PMD的指定页表项链接PTE，形成链接PGD->PUD->PMD->PTE
+                
+* @param : 1.PMD
+           2.虚拟地址起始(为PTE修正后的虚拟地址)
+           3.虚拟地址终止(为PTE修正后的虚拟地址)
+           4.物理地址(为PTE修正后的物理地址)
+           5.创建映射的内存属性
+           6.页表创建过程的标识位
+           7.分配下级页表的内存分配函数
+*------------------------------------------------------------------------------*/
+void alloc_pgtable_pte(
+    page_middle_directory *pmd,
+    UINT64 va_pte_start,            //映射虚拟地址起始
+    UINT64 va_pte_end,              //映射虚拟地址终止
+    UINT64 physical_addr_pte,
+    unsigned long attribute,
+    unsigned long flags,
+    UINT64 (*alloc_method)(void)    //页表PDG的分配方式	
+);
+
+/*-----------------------------------------------------------------------------
+* 设置PTE(L3)的页表项数据
+* @name: set_pte_pgtable
+* @function: 1.设置PTE(L3)的页表项数据         
+* @param : 1.PTE页表项的物理地址
+           2.PTE页表项存储的物理页框
+           3.属性参数
+           
+* @bug:  2023-3-21 可能存在进程线程冲突，毕竟锁机制还没有开发
+*------------------------------------------------------------------------------*/
+void set_pte_pgtable(
+    page_table_entry *pte,
+    UINT64 physical_addr,
+    unsigned long attribute
+);
 
 #endif //_PTE_L3_H_

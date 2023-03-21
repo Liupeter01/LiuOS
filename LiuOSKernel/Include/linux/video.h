@@ -2,10 +2,6 @@
 #define _VIDEO_H
 #pragma once
 #include"type.h"
-#include"console_struct.h"
-
-extern struct vc_data g_screen;
-extern void console_cls();
 
 /*-----------------------------------------------------------------------------
 * 操作系统内部初始化基础Console输出

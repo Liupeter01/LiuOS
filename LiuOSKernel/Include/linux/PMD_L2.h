@@ -18,6 +18,53 @@ typedef struct page_middle_directory{
 #define PMD_MASK		(~(PMD_SIZE-1))                         //屏蔽PT段的影响
 #define PTRS_PER_PMD	(1 << (PUD_SHIFT - PMD_SHIFT))          //PMD页表中页表项的个数
 
+/*-----------------------------------------------------------------
+*用于服务PUD页表功能函数的宏定义
+-----------------------------------------------------------------*/
+#define pmd_index(virt)	(((virt) >> PMD_SHIFT) & (PTRS_PER_PMD - 1))     //PUD页表项的索引功能
+
+/*
+ * Level 2 descriptor (PMD).
+ */
+#define PMD_TYPE_MASK		(3UL << 0)
+#define PMD_TYPE_FAULT		(0UL << 0)
+#define PMD_TYPE_TABLE		(3UL << 0)
+#define PMD_TYPE_SECT		(1UL << 0)
+#define PMD_TABLE_BIT		(1UL << 1)
+
+/*PMD页表是否抵达最底端(PMD是否越界)*/    
+#define is_pmd_arrive_end(virt,end_virt) ({ \
+	unsigned long __boundary = ((virt) + PMD_SIZE) & PMD_MASK;	\
+	(((__boundary) - 1) < ((end_virt) - 1))? (__boundary): (end_virt);	\
+})
+
+/*-----------------------------------------------------------------------------
+* PMD(L2)和PTE(L3)之间的关联
+* @name: set_l2_l3_connection
+* @function: 创建PMD(L2)和PTE(L3)之间的关联
+* @param : 1.PMD
+           2.PTE
+           3.页面属性(标记第三位为页表类型TABLE类型而不是页面)
+
+* @bug:  2023-3-21 可能存在进程线程冲突，毕竟锁机制还没有开发
+*------------------------------------------------------------------------------*/
+void set_l2_l3_connection( 
+    page_middle_directory *pmd,
+    UINT64 pte_addr,
+    pgdval_t attribute
+);
+
+/*-----------------------------------------------------------------------------
+* 取消PMD(L2)和PTE(L3)之间的关联
+* @name: close_l2_l3_connection
+* @function: 断开PMD(L2)和PTE(L3)之间的关联
+* @param : 1.PMD
+* @bug:  2023-3-21 可能存在进程线程冲突，毕竟锁机制还没有开发
+*------------------------------------------------------------------------------*/
+void close_l2_l3_connection( 
+    page_middle_directory *pmd
+);
+
 /*-----------------------------------------------------------------------------
 * 创建PMD(L2)的页表映射
 * @name: alloc_pgtable_pmd
