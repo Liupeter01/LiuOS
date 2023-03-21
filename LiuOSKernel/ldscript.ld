@@ -4,6 +4,7 @@ SECTIONS
 {
     /*在开启MMU之前严禁使用0XFFFF000000000000以上的地址*/
     /*. = 0XFFFF000000400000;*/
+    . = 0x400000;
     _here = .;
     .text.boot : {*(.text.boot)}
 

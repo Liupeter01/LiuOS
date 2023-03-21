@@ -10,6 +10,68 @@ PHYSICAL_MEMORY_STATISTICS g_MemoryDistribution = {			//用于描述内存布局
 	.m_infoCount = 0                    	//描述内存信息结构的数组索引总数
 };
 
+unsigned short memory_map[NR_PAGES] = {OS_MEMORY_UNKOWN};
+
+/*-----------------------------------------------------------------------------
+* 初始化物理内存分配的位图
+* @name: init_memory_bitmap
+* @function: 初始化物理内存分配的位图用于空闲内存分配
+*------------------------------------------------------------------------------*/
+void init_memory_bitmap()
+{
+	MM_INFORMATION* mm = g_MemoryDistribution.m_infoArr;			        //物理内存占用信息结构首地址
+    for(int i = 0 ; i < g_MemoryDistribution.m_infoCount ; ++i){
+        if(CONVERT_BYTES_TO_PAGES(mm[i].PhysicalStart) < NR_PAGES){
+            for(UINT64 start =  CONVERT_BYTES_TO_PAGES(mm[i].PhysicalStart) ;
+			    start < CONVERT_BYTES_TO_PAGES(mm[i].PhysicalStart) ; start++ )
+			{
+                memory_map[start] = mm[i].Type;
+            }
+        }
+    }
+}
+
+/*-----------------------------------------------------------------------------
+* 获取物理内存的空闲页面
+* @name: get_free_page
+* @function: 获取物理内存的空闲页面
+* @retvalue：返回物理地址
+*------------------------------------------------------------------------------*/
+UINT64 get_free_page()
+{
+    for(UINT64 i = 0;i < NR_PAGES ; ++i){
+        if(memory_map[i] == OS_MEMORY_UNUSED){
+            memory_map[i] = OS_MEMORY_USED;         //页面被占用
+            return i * PAGE_SIZE;      //返回地址
+        }
+    }
+    return -1;
+}
+
+/*-----------------------------------------------------------------------------
+* 释放物理内存
+* @name: free_page
+* @function: 释放物理内存
+* @param:1.传入地址
+*------------------------------------------------------------------------------*/
+void free_page(UINT64 addr)
+{
+    memory_map[addr / PAGE_SIZE] =  OS_MEMORY_UNUSED;   //释放
+}
+
+/*-----------------------------------------------------------------------------
+* 用于在系统没有初始化页表之前进行内存分配的函数
+* @name: early_pagetable_alloc
+* @function: 分配一个4KB的页面用于页表
+* @param : 1.
+*------------------------------------------------------------------------------*/
+UINT64 early_pagetable_alloc()
+{
+    UINT64 physcial_addr = get_free_page();
+    memset((void*)physcial_addr,0,PAGE_SIZE);
+    return physcial_addr;
+}
+
 /*-----------------------------------------------------------------------------
 * 为内存布局信息结构(MM_STRUCT)寻找空闲空间
 * @name: locate_conventional_space
@@ -27,6 +89,7 @@ locate_conventional_space(
 		*内存类型为空闲内存EfiConventionalMemory，且内存描述符的页面大小满足最低要求
 		---------------------------------------------------------------------*/
 		if (g_MemoryInitStruct.m_DescriptorArray[i].Type == EfiConventionalMemory &&
+			g_MemoryInitStruct.m_DescriptorArray[i].PhysicalStart > LOW_MEMORY &&
 			g_MemoryInitStruct.m_DescriptorArray[i].NumberOfPages > CONVERT_BYTES_TO_PAGES(memory_map->m_MemoryMapSize))
 		{
 			isMemoryDistributionFounded = TRUE;
@@ -72,6 +135,30 @@ void recalculate_pm_statistics()
 			mm[arrayCount].NumberOfPages = tempTailInsert.NumberOfPages;
 			g_MemoryDistribution.m_infoCount = arrayCount + 1;								//更新总数
 			break;
+		}
+	}
+	/*------------------------------------------------------------
+	*冒泡排序从小到大(之后可能进行修改)
+	------------------------------------------------------------*/
+	for (int i = 1; i < g_MemoryDistribution.m_infoCount; i++)
+	{
+		for (int j = 0; j < g_MemoryDistribution.m_infoCount - i; j++)
+		{
+			if (mm[j].PhysicalStart > mm[j + 1].PhysicalStart)
+			{
+				MM_INFORMATION temp = {							//临时数据
+					.Type = mm[j].Type,   						//内存类型数据
+					.PhysicalStart = mm[j].PhysicalStart,      	//物理起始地址
+					.NumberOfPages = mm[j].NumberOfPages      	//页面数量
+				};
+				mm[j].Type = mm[j + 1].Type;
+				mm[j].PhysicalStart = mm[j + 1].PhysicalStart;
+				mm[j].NumberOfPages = mm[j + 1].NumberOfPages;
+
+				mm[j + 1].Type = temp.Type;
+				mm[j + 1].PhysicalStart = temp.PhysicalStart;
+				mm[j + 1].NumberOfPages = temp.NumberOfPages;
+			}
 		}
 	}
 }

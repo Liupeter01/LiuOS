@@ -2,12 +2,41 @@
 #define _TYPE_H_
 #pragma once
 #include"RunTimeKernelConf.h"     //UEFI传递内核参数
+#include"tools.h"
 #include"string.h"
 #include"stdlib.h"
 #include"stdio.h"
 
 #define IN                        //输入参数
 #define OUT                       //输出参数
+
+/*------------------------------------------------------------
+*declaration!!
+*------------------------------------------------------------*/
+struct page_table_entry;      //PTE
+struct page_middle_directory; //PMD
+struct page_upper_directory;  //PUD
+struct page_global_directory; //PGD
+
+typedef UINT64 pteval_t;        //PTE   
+typedef UINT64 pmdval_t;        //PMD
+typedef UINT64 pudval_t;        //PUD
+typedef UINT64 pgdval_t;        //PGD
+typedef UINT32 phys_addr_t;     //物理地址
+
+/*------------------------------------------------------------
+*物理内存分配所用参数信息表
+------------------------------------------------------------*/
+#define PAGE_SHIFT 12
+#define PAGE_SIZE 4096              //页面大小
+#define PAGE_MASK         (~(PAGE_SIZE-1))
+#define PAGE_ALIGN(addr) (((addr)+PAGE_SIZE-1) & PAGE_MASK)
+
+#define __phys_to_pte_val(phys)	(phys)      //
+
+#define LOW_MEMORY 0x400000                 //低地址
+#define HIGH_MEMORY (0x100000*1024)         //高地址1024MB
+#define NR_PAGES (HIGH_MEMORY /PAGE_SIZE)  //有效页面总数
 
 /*-----------------------------------------------------------------------------
 * 描述屏幕点的坐标

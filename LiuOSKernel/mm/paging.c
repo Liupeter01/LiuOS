@@ -10,26 +10,79 @@
 void 
 paging_init()
 {
-    /*
-    for(int i = 0; i < g_MemoryDistribution.m_infoCount ; ++i){          //遍历内存布局信息结构数组
-        MM_INFORMATION * mm_info = &g_MemoryDistribution.m_infoArr[i];
-        phys_addr_t start = mm_info->PhysicalStart;                     //物理内存起始
-        phys_addr_t end = mm_info->PhysicalStart + (NumberOfPages << 12);//物理内存终点
-        __create_pgd_mapping(
-            swapper_pg_dir,                 //内核PDG
-            start,                          //物理起始地址
-            end-start,                      //物理地址大小
-            __phys_to_virt(start),          //物理线性地址转换
-            //XXXXXX??????XXXXXX
-        );
-    }
-    */
+    init_memory_bitmap();               //初始化物理内存分配的位图
+    create_identical_mapping();         //创建内核的恒等映射
+    create_mmio_mapping();              //创建MMIO的恒等映射
+
     /*将内核文件代码段.text映射到swapper_pg_dir PGD*/
     map_kernel_segment((page_global_directory *)swapper_pg_dir, (void*)_text_start, (void*)_text_end, NULL);
     /*将内核文件只读数据段.rodata区映射到swapper_pg_dir PGD*/
     map_kernel_segment((page_global_directory *)swapper_pg_dir, (void*)_rodata_start, (void*)_rodata_end, NULL);
     /*将内核文件数据段.data映射到swapper_pg_dir PGD*/
     map_kernel_segment((page_global_directory *)swapper_pg_dir, (void*)_data_start, (void*)_data_end, NULL);
+}
+
+/*-----------------------------------------------------------------------------
+* 操作系统创建恒等映射，映射代码区和数据区
+* @name: create_identical_mapping
+* @function: 映射VA=PA的区域，主要目的就是为了打开MMU进行必要的准备
+*------------------------------------------------------------------------------*/
+void create_identical_mapping()
+{
+    /*代码段恒等映射*/
+    UINT64 address_start = (UINT64)_text_start;   //代码段起始
+    UINT64 address_end = (UINT64)_text_end;       //代码段终止
+    UINT64 area_size = address_end - address_start;      //代码段长度
+
+    __create_pgd_mapping(                       //创建代码段恒等映射
+        (page_global_directory *)idmap_pg_dir, //PGD
+        (UINT64)address_start,          //物理起始地址
+        (UINT64)address_start,          //映射虚拟地址
+        area_size,                             //区域长度
+        PAGE_KERNEL_ROX,                       //属性只读可执行
+        0,
+        early_pagetable_alloc
+    );
+
+    /*只读数据段恒等映射*/
+    address_start = (UINT64)_data_start;             //只读数据段起始
+    address_end = (UINT64)_data_end;                 //只读数据段终止
+    area_size = address_end - address_start;                //只读数据段长度
+
+     __create_pgd_mapping(                       //创建只读数据段恒等映射
+        (page_global_directory *)idmap_pg_dir,   //创建恒等映射
+        (UINT64)address_start,            //物理起始地址
+        (UINT64)address_start,            //映射虚拟地址
+        area_size,                               //区域长度
+        PAGE_KERNEL_RO,                          //属性内核只读普通页面
+        0,
+        early_pagetable_alloc
+    );
+
+    /*数据段恒等映射*/
+    address_start = (UINT64)_data_start;      //数据段起始
+    address_end = (UINT64)_data_end;          //数据段终止
+    area_size = address_end - address_start;         //数据段长度
+    
+    __create_pgd_mapping(                           //创建数据段恒等映射
+        (page_global_directory *)idmap_pg_dir,      //创建恒等映射
+        (UINT64)address_start,               //物理起始地址
+        (UINT64)address_start,               //映射虚拟地址
+        area_size,                                  //区域长度
+        PAGE_KERNEL,                                //属性内核普通内存页面
+        0,
+        early_pagetable_alloc
+    );
+}
+
+/*-----------------------------------------------------------------------------
+* 创建MMIO的恒等映射
+* @name:  create_mmio_mapping
+* @function: 创建MMIO的恒等映射(MMIO位于内存高地址处)
+*------------------------------------------------------------------------------*/
+void create_mmio_mapping()
+{
+
 }
 
 /*-----------------------------------------------------------------------------
@@ -49,19 +102,4 @@ map_kernel_segment(
     phys_addr_t (*alloc_method)(void))   //页表PDG的分配方式
 {
 
-}
-
-/*-----------------------------------------------------------------------------
-* 关闭TLB的结构
-* @name: disable_tlb_cache
-* @function: 关闭TLB的结构
-*------------------------------------------------------------------------------*/
-void disable_tlb_cache()
-{
-#ifdef __aarch64__
-    asm volatile("TLBI ALLE1"::);       //invalid all TLB entries
-#endif //__aarch64__
-#ifdef __x86_64__
-    asm volatile(""::);
-#endif //__aarch64__
 }

@@ -1,116 +1,82 @@
 ﻿#ifndef _PAGETABLE_H_
 #define _PAGETABLE_H_
 #pragma once
-#include"type.h"
+#include"PGD_L0.h"
+#include"PUD_L1.h"
+#include"PMD_L2.h"
+#include"PTE_L3.h"
 #include"pm_statistics.h"       //物理内存数据(来自UEFI内存描述符)
 
-typedef UINT64 pteval_t;        //PTE   
-typedef UINT64 pmdval_t;        //PMD
-typedef UINT64 pudval_t;        //PUD
-typedef UINT64 pgdval_t;        //PGD
-typedef UINT32 phys_addr_t;     //物理地址
+/*-----------------------------------------------------------------
+ *   PGD,PUD,PMD到PTE页表的转化
+ *   +--------+--------+--------+--------+--------+--------+--------+--------+
+ *   |63    56|55    48|47    40|39    32|31    24|23    16|15     8|7      0|
+ *   +--------+--------+--------+--------+--------+--------+--------+--------+
+ *    |                 |         |         |         |         |
+ *    |                 |         |         |         |         v
+ *    |                 |         |         |         |   [11:0]  in-page offset
+ *    |                 |         |         |         +-> [20:12] L3 index
+ *    |                 |         |         +-----------> [29:21] L2 index
+ *    |                 |         +---------------------> [38:30] L1 index
+ *    |                 +-------------------------------> [47:39] L0 index
+ *    +-------------------------------------------------> [63] TTBR0/1
+ *
+-----------------------------------------------------------------*/
+#define __pgd_to_phys(pgd) __pte_to_phys(pgd_pte(pgd))                    //PGD页表项中内容转换物理地址
+
+/*-----------------------------------------------------------------------------
+* 
+* @name: 
+* @function: 
+*------------------------------------------------------------------------------*/
+phys_addr_t pgd_page_to_physical_address(page_global_directory pgd);
+
+/*-----------------------------------------------------------------------------
+* 
+* @name: 
+* @function: 
+*------------------------------------------------------------------------------*/
+page_table_entry pgd_pte(page_global_directory pgd);
+
+/*-----------------------------------------------------------------------------
+* 
+* @name: 
+* @function: 
+*------------------------------------------------------------------------------*/
+page_table_entry pud_pte(page_upper_directory pud);
+
+/*-----------------------------------------------------------------------------
+* 
+* @name: 
+* @function: 
+*------------------------------------------------------------------------------*/
+page_upper_directory pte_pud(page_table_entry pte);
+
+/*-----------------------------------------------------------------------------
+* 
+* @name: 
+* @function: 
+*------------------------------------------------------------------------------*/
+page_middle_directory pud_pmd(page_upper_directory pud);
+
+/*-----------------------------------------------------------------------------
+* 
+* @name: 
+* @function: 
+*------------------------------------------------------------------------------*/
+page_table_entry pmd_pte(page_middle_directory pmd);
+
+/*-----------------------------------------------------------------------------
+* 
+* @name: 
+* @function: 
+*------------------------------------------------------------------------------*/
+page_middle_directory pte_pmd(page_table_entry pte);
 
 /*-----------------------------------------------------------------
-*页全局目录Page Global Directory(L0)
+*仅供启动测试用途的内存映射
 *-----------------------------------------------------------------*/
-typedef struct page_global_directory{ 
-    pgdval_t pgd; 
-} page_global_directory;
-
-#define pgd_val(x)	((x).pgd)
-#define __pgd(x)	((page_global_directory) { (x) } )
-
-#define MAX_USER_VA_BITS 48                                     //虚拟地址位宽
-#define PGDIR_SHIFT	39                                          //PGD页表在虚拟地址中的偏移
-#define PGDIR_SIZE	(1UL << PGDIR_SHIFT)                        //PGD页表项所能映射的区域
-#define PGDIR_MASK	(~(PGDIR_SIZE-1))                           //屏蔽其他的目录的干扰
-#define PTRS_PER_PGD (1 << (MAX_USER_VA_BITS - PGDIR_SHIFT))    //PGD页表中页表项的个数
-#define pgd_index(virt)		(((virt) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))
-
-/*-----------------------------------------------------------------
-*页上级目录Page Upper Directory(L1)
-*-----------------------------------------------------------------*/
-typedef struct PageUpperDirectory{ 
-    pudval_t pud; 
-} PageUpperDirectory;
-#define pud_val(x)	((x).pud)
-#define __pud(x)	((PageUpperDirectory) { (x) } )
-
-#define PUD_SHIFT		30                                      //PUD页表在虚拟地址中的偏移
-#define PUD_SIZE		(1UL << PUD_SHIFT)                      //PUD页表项所能映射区域的大小
-#define PUD_MASK		(~(PUD_SIZE-1))                         //屏蔽其他目录的干扰
-#define PTRS_PER_PUD	(1 << (PGDIR_SHIFT - PUD_SHIFT) )       //PUD页表中页表项的个数
-
-/*-----------------------------------------------------------------
-*页中间目录Page Middle Directory(L2)
-*-----------------------------------------------------------------*/
-typedef struct PageMiddleDirectory{ 
-    pmdval_t pmd; 
-} PageMiddleDirectory;
-#define pmd_val(x)	((x).pmd)
-#define __pmd(x)	((PageMiddleDirectory) { (x) } )
-
-#define PMD_SHIFT		21                                      //PMD页表在虚拟地址中的偏移
-#define PMD_SIZE		(1UL << PMD_SHIFT)                      //PMD页表项所能映射区域的大小
-#define PMD_MASK		(~(PMD_SIZE-1))                         //屏蔽PT段的影响
-#define PTRS_PER_PMD	(1 << (PUD_SHIFT - PMD_SHIFT))          //PMD页表中页表项的个数
-
-/*-----------------------------------------------------------------
-*页表PageTable PTE(L3)
-*-----------------------------------------------------------------*/
-typedef struct PageTableEntry{ 
-    pteval_t pte; 
-} PageTableEntry;
-#define pte_val(x)	((x).pte)
-#define __pte(x)	((PageTableEntry) { (x) } )
-
-#define PTE_SHIFT		12                                      //PTE页表在虚拟地址中的偏移
-#define PTE_SIZE		(1UL << PTE_SHIFT)                      //PTE页表项所能映射区域的大小
-#define PTE_MASK		(~(PTE_SIZE-1))                         //屏蔽PT索引段的影响
-#define PTRS_PER_PTE	(1 << (PMD_SHIFT - PTE_SHIFT))          //PTE页表项的个数
-
-/*-----------------------------------------------------------------
-*页表PTE(L3)的高位属性和低位属性
-+---+--------+-----+-----+---+------------------------+---+----+----+----+----+------+----+----+
-| R |   SW   | UXN | PXN | R | Output address [47:12] | R | AF | SH | AP | NS | INDX | TB | VB |
-+---+--------+-----+-----+---+------------------------+---+----+----+----+----+------+----+----+
- 63  58    55 54    53    52  47                    12 11  10   9  8 7  6 5    4    2 1    0
-
-R    - reserve
-SW   - reserved for software use
-UXN  - unprivileged execute never
-PXN  - privileged execute never
-AF   - access flag
-SH   - shareable attribute
-AP   - access permission
-NS   - security bit
-INDX - index into MAIR register
-TB   - table descriptor bit
-VB   - validity descriptor bit
-*-----------------------------------------------------------------*/
-#define PTE_VALID		    (1UL << 0)
-#define PTE_WRITE		    (PTE_DBM)		 /* same as DBM (51) */
-#define PTE_DIRTY		    (1UL << 55)
-#define PTE_SPECIAL		    (1UL << 56)
-#define PTE_PROT_NONE		(1UL << 58) /* only when !PTE_VALID */
-
-#define PTE_TYPE_MASK		(3UL << 0)
-#define PTE_TYPE_FAULT		(0UL << 0)
-#define PTE_TYPE_PAGE		(3UL << 0)
-#define PTE_TABLE_BIT		(1UL << 1)
-#define PTE_USER		    (1UL << 6)		
-#define PTE_RDONLY		    (1UL << 7)		
-#define PTE_SHARED		    (1UL << 8)		
-#define PTE_AF			    (1UL << 10)	
-#define PTE_NG			    (1UL << 11)	
-#define PTE_DBM			    (1UL << 51)
-#define PTE_CONT		    (1UL << 52)	
-#define PTE_PXN			    (1UL << 53)	
-#define PTE_UXN			    (1UL << 54)	
-#define PTE_HYP_XN		    (1UL << 54)	
-
-#define PTE_ATTRINDX(t)		((t) << 2)
-#define PTE_ATTRINDX_MASK	(7 << 2)
+extern unsigned short memory_map[NR_PAGES];
 
 /*-----------------------------------------------------------------
 *内存属性参数(根据设备属性编号MT_*_*访问页表的AttrIndex字段数值)
@@ -123,7 +89,6 @@ VB   - validity descriptor bit
 #define MT_NORMAL_WT		5   //普通内存，高速缓存采用直写回写策略
 
 #define _PROT_DEFAULT		(PTE_TYPE_PAGE | PTE_AF | PTE_SHARED)
-#define PTE_MAYBE_NG		(PTE_NG)
 #define PROT_DEFAULT		(_PROT_DEFAULT | PTE_MAYBE_NG)
 #define PROT_DEVICE_nGnRnE	(PROT_DEFAULT | PTE_PXN | PTE_UXN | PTE_DIRTY | PTE_WRITE | PTE_ATTRINDX(MT_DEVICE_nGnRnE))
 #define PROT_DEVICE_nGnRE	(PROT_DEFAULT | PTE_PXN | PTE_UXN | PTE_DIRTY | PTE_WRITE | PTE_ATTRINDX(MT_DEVICE_nGnRE))
@@ -161,12 +126,19 @@ extern page_global_directory swapper_pg_dir[];
 extern page_global_directory idmap_pg_dir[];
 
 /*-----------------------------------------------------------------------------
+* 初始化物理内存分配的位图
+* @name: init_memory_bitmap
+* @function: 初始化物理内存分配的位图用于空闲内存分配
+*------------------------------------------------------------------------------*/
+void init_memory_bitmap();
+
+/*-----------------------------------------------------------------------------
 * 获取物理内存的空闲页面
 * @name: get_free_page
 * @function: 获取物理内存的空闲页面
 * @retvalue：返回物理地址
 *------------------------------------------------------------------------------*/
-unsigned long get_free_page();
+UINT64 get_free_page();
 
 /*-----------------------------------------------------------------------------
 * 释放物理内存
@@ -174,7 +146,7 @@ unsigned long get_free_page();
 * @function: 释放物理内存
 * @param:1.传入地址
 *------------------------------------------------------------------------------*/
-void free_page(unsigned long addr);
+void free_page(UINT64 addr);
 
 /*-----------------------------------------------------------------------------
 * 用于在系统没有初始化页表之前进行内存分配的函数
@@ -182,35 +154,6 @@ void free_page(unsigned long addr);
 * @function: 分配一个4KB的页面用于页表
 * @param : 1.
 *------------------------------------------------------------------------------*/
-unsigned long early_pagetable_alloc();
-
-/*-----------------------------------------------------------------------------
-* 创建PGD(L0)的页表映射
-* @name: __create_pgd_mapping
-* @function: 创建PGD(L0)的页表映射
-* @param : 1.全局目录PGD
-           2.物理地址
-           3.映射虚拟地址
-           4.地址长度
-           5.创建映射的内存属性
-           6.页表创建过程的标识位
-           7.分配下级页表的内存分配函数
-*------------------------------------------------------------------------------*/
-void __create_pgd_mapping(
-    page_global_directory *pgd,
-    unsigned long physical_addr,
-    unsigned long virt,                 //映射虚拟地址
-    unsigned long mapping_size,
-    unsigned long attribute,
-    unsigned long flags,
-    unsigned long (*alloc_method)(void)    //页表PDG的分配方式	
-);
-
-/*-----------------------------------------------------------------------------
-* 操作系统创建恒等映射，映射代码区和数据区
-* @name: create_identical_mapping
-* @function: 映射VA=PA的区域，主要目的就是为了打开MMU进行必要的准备
-*------------------------------------------------------------------------------*/
-void create_identical_mapping();
+UINT64 early_pagetable_alloc();
 
 #endif //_PAGETABLE_H_

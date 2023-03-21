@@ -1,10 +1,7 @@
 ﻿#ifndef _MM_STRUCT_H_
 #define _MM_STRUCT_H_
 #pragma once
-
 #include"type.h"
-
-#define PAGE_SIZE 4096
 
 /*------------------------------------------------------------
 typedef enum {
@@ -26,12 +23,14 @@ typedef enum {
   EfiMaxMemoryType                   os_memory_uefi
 } EFI_MEMORY_TYPE;
 ------------------------------------------------------------*/
-#define OS_MEMORY_UNUSED 0      //没有使用空闲
-#define OS_MEMORY_USED 1        //已经使用
-#define OS_MEMORY_ACPI 2        //ACPI
-#define OS_MEMORY_UEFI 3        //UEFI内存
-#define OS_MEMORY_RT 4          //RT内存
-#define OS_MEMORY_MMIO 5        //MMIO内存
+#define OS_MEMORY_UNKOWN 0      //未知类型(用于区别内存空洞)
+#define OS_MEMORY_UNUSED 1      //没有使用空闲
+#define OS_MEMORY_USED 2        //已经使用
+#define OS_MEMORY_ACPI 3        //ACPI
+#define OS_MEMORY_UEFI 4        //UEFI内存
+#define OS_MEMORY_RT 5          //RT内存
+#define OS_MEMORY_MMIO 6        //MMIO内存
+#define OS_MEMORY_VOID 7       //内存孔洞
 
 /*-----------------------------------------------------------------
  *经过改良并内存对齐填补的内存描述符结构(0x30B)
