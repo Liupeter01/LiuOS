@@ -9,25 +9,26 @@
 Bool 
 paging_init()
 {
-    //init_memory_bitmap();               //初始化物理内存分配的位图
-    //create_identical_mapping();         //创建内核的恒等映射
-    //create_mmio_mapping();              //创建MMIO的恒等映射
-    /*
-    init_cpu();                         //检查并初始化基础设置
-    if(enable_mmu(idmap_pg_dir)){                   //开启MMU
-        console_puts("[paging module SUCCESSED]:enable mmu successed!\n");
-    }
-    else{
-        console_puts("[paging module FAILED]:enable mmu FAILED!\n");
-        return;
-    }
-    */
+    debug_kernel_segment();             //输出内核段信息
+    init_memory_bitmap();               //初始化物理内存分配的位图
+    create_identical_mapping();         //创建内核的恒等映射(此模块有BUG！！！！！！！)
+    create_mmio_mapping();              //创建MMIO的恒等映射
+
+    //init_cpu();                         //检查并初始化基础设置
+
+    //if(!enable_mmu(idmap_pg_dir)){                   //开启MMU
+    //    console_puts("[paging module FAILED]:enable mmu FAILED!\n");
+    //    return FALSE;
+    //}
+    console_puts("[paging module SUCCESSED]:enable mmu successed!\n");
+
     /*将内核文件代码段.text映射到swapper_pg_dir PGD*/
     map_kernel_segment((page_global_directory *)swapper_pg_dir, (void*)_text_start, (void*)_text_end, NULL);
     /*将内核文件只读数据段.rodata区映射到swapper_pg_dir PGD*/
     map_kernel_segment((page_global_directory *)swapper_pg_dir, (void*)_rodata_start, (void*)_rodata_end, NULL);
     /*将内核文件数据段.data映射到swapper_pg_dir PGD*/
     map_kernel_segment((page_global_directory *)swapper_pg_dir, (void*)_data_start, (void*)_data_end, NULL);
+    return TRUE;
 }
 
 /*-----------------------------------------------------------------------------
@@ -110,4 +111,52 @@ map_kernel_segment(
     phys_addr_t (*alloc_method)(void))   //页表PDG的分配方式
 {
 
+}
+
+/*-----------------------------------------------------------------------------
+* 打印内核段的物理加载地址信息(DEBUG专用)
+* @name: debug_kernel_segment
+* @function: 打印内核段的物理加载地址信息(DEBUG专用)
+*------------------------------------------------------------------------------*/
+void debug_kernel_segment()
+{
+    /*_text*/
+    char str[256] = {"_text_start = "};
+    itoa((UINT64)_text_start,str + strlen(str),16);
+    strcat(str,"    _text_end = ");
+    itoa((UINT64)_text_end,str + strlen(str),16);
+    console_puts(str);
+    console_putc('\n');
+
+    /*rodata*/
+    memset(str,0,256);
+    strcpy(str,"_rodata_start = ");
+    itoa((UINT64)_rodata_start,str + strlen(str),16);
+    strcat(str,"     _rodata_end");
+    itoa((UINT64)_rodata_end,str + strlen(str),16);
+    console_puts(str);
+    console_putc('\n');
+
+    /*data*/
+    memset(str,0,256);
+    strcpy(str,"_data_start = ");
+    itoa((UINT64)_data_start,str + strlen(str),16);
+    strcat(str,"     _data_end");
+    itoa((UINT64)_data_end,str + strlen(str),16);
+    console_puts(str);
+    console_putc('\n');
+
+    /*swapper_pg_dir*/
+    memset(str,0,256);
+    strcpy(str,"swapper_pg_dir = ");
+    itoa((UINT64)swapper_pg_dir,str + strlen(str),16);
+    console_puts(str);
+    console_putc('\n');
+
+    /*idmap_pg_dir*/
+    memset(str,0,256);
+    strcpy(str,"idmap_pg_dir = ");
+    itoa((UINT64)idmap_pg_dir,str + strlen(str),16);
+    console_puts(str);
+    console_putc('\n');
 }

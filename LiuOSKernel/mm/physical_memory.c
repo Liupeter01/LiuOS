@@ -1,10 +1,5 @@
 ﻿#include"pm_statistics.h"
 
-MEMORY_INIT_STRUCT g_MemoryInitStruct = {   //全局内核BootLoader内存参数
-	.m_UefiDesciptorCount = 0,				//内存描述符存储数组元素个数
-	.m_DescriptorArray = NULL				//内存描述符存储数组
-};
-
 PHYSICAL_MEMORY_STATISTICS g_MemoryDistribution = {//用于描述内存布局信息结构的数组和大小
 	.m_infoArr = NULL,           			//描述内存信息结构的数组
 	.m_infoCount = 0                    	//描述内存信息结构的数组索引总数
@@ -29,6 +24,7 @@ void init_memory_bitmap()
             }
         }
     }
+	console_puts("[BITMAP INIT SUCCESSES]:Bitmap init successed!\n");
 }
 
 /*-----------------------------------------------------------------------------
@@ -200,7 +196,6 @@ init_pm_statistics(
 		m_infoCount++;														//自增描述内存信息结构的数组索引总数
 	}	
 	g_MemoryDistribution.m_infoCount = m_infoCount;							//获取
-	console_puts("init_pm_statistics\n");
 	recalculate_pm_statistics();
 }
 

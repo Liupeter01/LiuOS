@@ -19,8 +19,13 @@ mm_init(MEMORY_MAP_CONFIG* memory_map)
 	init_pm_statistics(
 		BootStart,
 		BootSize
-	);												//使用内存描述符初始化内存布局信息结构(MM_INFORMATION)
+	);																	//使用内存描述符初始化内存布局信息结构(MM_INFORMATION)
 	debug_pm_statistics();												//输出内存调试信息
-	//paging_init();														//启动分页
+
+	if(!paging_init()){													//启动分页是否成功
+		console_puts("[Memory Init FAILED]:paging init failed!\n");
+		return FALSE;
+	}
+	console_puts("[Memory Init SUCCESSED]:paging init successed!\n");
 	return TRUE;
 }

@@ -30,7 +30,7 @@ init_cpu()
     }; 
     //write_sysreg(mairel1_val,mair_el1);    
     /*写入MAIR_EL1内存属性设置寄存器*/
-	asm volatile("msr " __stringify(mair_el1) ", %x0"::"rZ"(mairel1_val)); 
+	asm volatile("msr mair_el1, %x0"::"rZ"(mairel1_val)); 
 
     unsigned long tcr_reg = {
         TCR_TxSZ(VA_BITS) |                 //地址最大值参数
@@ -41,7 +41,7 @@ init_cpu()
     //unsigned long max_physical_mem = read_sysreg(ID_AA64MMFR0_EL1) & 0xF;
     /*读取系统支持的最大物理内存*/
     unsigned long max_physical_mem = 0;
-    asm volatile("mrs %0, " __stringify(ID_AA64MMFR0_EL1) : "=r" (max_physical_mem)); 
+    asm volatile("mrs %0, ID_AA64MMFR0_EL1" : "=r" (max_physical_mem)); 
     {
         char str[256] = {"[cpu init info]:max_physical_mem = "};
         itoa(max_physical_mem, str + strlen(str), 16);
@@ -56,7 +56,7 @@ init_cpu()
 
     //write_sysreg(tcr_reg, SYS_TCR_EL1);
     /*写入tcr_el1寄存器*/
-	asm volatile("msr " __stringify(tcr_el1) ", %x0"::"rZ"(tcr_reg)); //写入tcr_el1寄存器
+	asm volatile("msr tcr_el1, %x0"::"rZ"(tcr_reg)); //写入tcr_el1寄存器
 
 #endif //__aarch64__
 }

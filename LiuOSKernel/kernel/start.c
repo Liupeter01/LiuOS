@@ -13,7 +13,7 @@ unsigned long long _start(KERNEL_PARAMS_CONFIG * kernelParam)
 	video_init(kernelParam->m_graphic);		//初始化视频功能
 	console_init(kernelParam->m_font);		//初始化控制台shell显示功能
 	console_cls();
-
+	console_cls();
 	console_puts("Welcome to LiuOS(LPH Corporation Present 2023)\n");
 	if(!mm_init(kernelParam->m_memory)){			//初始化内存
 		goto LiuOSStartupFailed;				//执行错误处理程序

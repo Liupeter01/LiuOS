@@ -18,25 +18,19 @@ SECTIONS
 
     _data_start = . ;    /*数据段起始地址*/
     .data : {*(.data) }
-
     . = ALIGN(4096);
 
 	idmap_pg_dir = .;
-	. += 4 * 4096;          /*IDMAP_PGTABLE_LEVELS * PAGE_SIZE(共四个页表PGD,PUD,PMD,PTE)*/
-	idmap_pg_end = .;
-
-	. = ALIGN(4096);
+	. += 4096;          /*IDMAP_PGTABLE_LEVELS * PAGE_SIZE(共四个页表PGD,PUD,PMD,PTE)*/
 	/*init_pg_dir = .;
 	. += INIT_DIR_SIZE;
 	init_pg_end = .;
     . = ALIGN(4096);*/
-
     swapper_pg_dir = . ;
     . += 4096 ;
-    swapper_pg_end = . ;
+    
     _data_end = .;      /*数据段终止地址*/
 
     .bss : { *(.bss)  }
     . = ALIGN(0x00200000);
-
 }

@@ -42,4 +42,12 @@ map_kernel_segment(
     void* virtual_end,
     phys_addr_t (*alloc_method)(void)   //页表PDG的分配方式
 );   
+
+/*-----------------------------------------------------------------------------
+* 打印内核段的物理加载地址信息(DEBUG专用)
+* @name: debug_kernel_segment
+* @function: 打印内核段的物理加载地址信息(DEBUG专用)
+*------------------------------------------------------------------------------*/
+void debug_kernel_segment();
+
 #endif //_PAGES_H_

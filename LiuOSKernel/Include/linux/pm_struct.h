@@ -47,16 +47,6 @@ typedef struct NEW_MEMORY_DESCRIPTOR{
 } NEW_MEMORY_DESCRIPTOR;
 
 /*-----------------------------------------------------------------
- *接收来自内核BootLoader内存参数传递
-*-----------------------------------------------------------------*/
-#pragma pack(1)
-typedef struct MEMORY_INIT_STRUCT
-{
-    UINTN m_UefiDesciptorCount;                     //内存描述符存储数组元素个数
-    NEW_MEMORY_DESCRIPTOR *m_DescriptorArray;       //内存描述符存储数组
-} __attribute__((__aligned__(1))) MEMORY_INIT_STRUCT;
-
-/*-----------------------------------------------------------------
  *物理内存布局信息结构(鉴于内核BootLoader内存参数基础上)(4B对齐)
 *-----------------------------------------------------------------*/
 #pragma pack(1)
@@ -76,7 +66,6 @@ typedef struct PHYSICAL_MEMORY_STATISTICS{  //用于描述物理内存的页面�
 }__attribute__((__aligned__(1))) PHYSICAL_MEMORY_STATISTICS;
 
 extern PHYSICAL_MEMORY_STATISTICS g_MemoryDistribution ;      //内存分布
-extern MEMORY_INIT_STRUCT g_MemoryInitStruct;//专门用于读取信息
 
 
 /*-----------------------------------------------------------------------------
