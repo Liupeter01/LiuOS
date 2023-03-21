@@ -21,13 +21,17 @@ struct page_global_directory; //PGD
 extern struct vc_data g_screen;
 extern void console_cls();
 
-/***************************************************************/
-
 typedef UINT64 pteval_t;        //PTE   
 typedef UINT64 pmdval_t;        //PMD
 typedef UINT64 pudval_t;        //PUD
 typedef UINT64 pgdval_t;        //PGD
 typedef UINT32 phys_addr_t;     //物理地址
+
+/*----------------------------------------------------------
+*物理地址转换为虚拟地址(线性映射)
+*----------------------------------------------------------*/
+#define CONFIG_ARM64_VA_BITS 48                             //开启4KB分页
+#define VA_BITS			(CONFIG_ARM64_VA_BITS)
 
 /*------------------------------------------------------------
 *物理内存分配所用参数信息表

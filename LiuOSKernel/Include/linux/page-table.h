@@ -6,6 +6,7 @@
 #include"PMD_L2.h"
 #include"PTE_L3.h"
 #include"pm_statistics.h"       //物理内存数据(来自UEFI内存描述符)
+#include"mmu.h"
 
 /*-----------------------------------------------------------------
  *   PGD,PUD,PMD到PTE页表的转化
@@ -95,16 +96,25 @@ page_middle_directory pte_pmd(page_table_entry pte);
 *-----------------------------------------------------------------*/
 extern unsigned short memory_map[NR_PAGES];
 
+/*----------------------------------------------------------
+*引入来自链接文件ld中SECTIONS中的重要参数信息
+*1.idmap_pg_dir：恒等映射的页表PDG
+ 2.swapper_pg_dir
+ 3.数据段的起始和终止：_data_start[],_data_end[];
+ 4.代码段的起始和终止：_text_start[], _text_end[];
+ 5.只读数据段的起始和终止_rodata_start[], _rodata_end[];
+*----------------------------------------------------------*/
+extern char _data_start[],_data_end[];
+extern char _text_start[], _text_end[];
+extern char _rodata_start[], _rodata_end[];
+extern char _here[];
+
+extern page_global_directory swapper_pg_dir[];
+extern page_global_directory idmap_pg_dir[];
+
 /*-----------------------------------------------------------------
 *内存属性参数(根据设备属性编号MT_*_*访问页表的AttrIndex字段数值)
 -----------------------------------------------------------------*/
-#define MT_DEVICE_nGnRnE	0   //设备内存，不支持聚合、指令重排以及提前写应答
-#define MT_DEVICE_nGnRE		1   //设备内存，不支持聚合、指令重排，但是支持提前写应答
-#define MT_DEVICE_GRE		2   //设备内存，支持聚合、指令重排以及提前写应答
-#define MT_NORMAL_NC		3   //普通内存，关闭高速缓存
-#define MT_NORMAL		    4   //普通内存(内核的可执行代码段和数据段采用该部分内存!!!!!!!)
-#define MT_NORMAL_WT		5   //普通内存，高速缓存采用直写回写策略
-
 #define _PROT_DEFAULT		(PTE_TYPE_PAGE | PTE_AF | PTE_SHARED)
 #define PROT_DEFAULT		(_PROT_DEFAULT | PTE_MAYBE_NG)
 #define PROT_DEVICE_nGnRnE	(PROT_DEFAULT | PTE_PXN | PTE_UXN | PTE_DIRTY | PTE_WRITE | PTE_ATTRINDX(MT_DEVICE_nGnRnE))
@@ -125,22 +135,6 @@ typedef struct { pteval_t pgprot; } pgprot_t;
 #define PAGE_KERNEL_ROX		((PROT_NORMAL & ~(PTE_WRITE | PTE_PXN)) | PTE_RDONLY)   //内核只读可执行页面
 #define PAGE_KERNEL_EXEC	(PROT_NORMAL & ~PTE_PXN)                                //内核可执行普通页面
 #define PAGE_KERNEL_EXEC_CONT	((PROT_NORMAL & ~PTE_PXN) | PTE_CONT)               //内核可执行普通页面且物理连续
-
-/*----------------------------------------------------------
-*引入来自链接文件ld中SECTIONS中的重要参数信息
-*1.idmap_pg_dir：恒等映射的页表PDG
- 2.swapper_pg_dir
- 3.数据段的起始和终止：_data_start[],_data_end[];
- 4.代码段的起始和终止：_text_start[], _text_end[];
- 5.只读数据段的起始和终止_rodata_start[], _rodata_end[];
-*----------------------------------------------------------*/
-extern char _data_start[],_data_end[];
-extern char _text_start[], _text_end[];
-extern char _rodata_start[], _rodata_end[];
-extern char _here[];
-
-extern page_global_directory swapper_pg_dir[];
-extern page_global_directory idmap_pg_dir[];
 
 /*-----------------------------------------------------------------------------
 * 初始化物理内存分配的位图

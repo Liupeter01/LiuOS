@@ -20,6 +20,7 @@ CFLAGS:= -no-pie -nostdlib -Wall -g -ffreestanding \
 	   -I ./Include/  \
 	   -I ./Include/linux  \
 	   -I ./Include/boot \
+	   -I ./Include/hardware \
 	   -I ../../BaseTools/Source/C/Include/AArch64/
 
 #$(TARGET):$(OBJS)
