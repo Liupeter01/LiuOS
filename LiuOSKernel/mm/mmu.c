@@ -42,14 +42,9 @@ init_cpu()
     /*读取系统支持的最大物理内存*/
     unsigned long max_physical_mem = 0;
     asm volatile("mrs %0, ID_AA64MMFR0_EL1" : "=r" (max_physical_mem)); 
-    {
-        char str[256] = {"[cpu init info]:max_physical_mem = "};
-        itoa(max_physical_mem, str + strlen(str), 16);
-        console_puts(str);
-        console_putc('\n');
-    }
-    if(max_physical_mem > ID_AA64MMFR0_PARANGE_48){  //如果系统物理内存数量大于48位               
-        max_physical_mem = ID_AA64MMFR0_PARANGE_48; //将系统物理内存加以限制
+    max_physical_mem &= 0xF;                                //提取有效位
+    if(max_physical_mem> ID_AA64MMFR0_PARANGE_48){           //如果系统物理内存数量大于48位(256TB)               
+        max_physical_mem = ID_AA64MMFR0_PARANGE_48;         //将系统物理内存加以限制
     }
 
     tcr_reg |= (max_physical_mem << TCR_IPS_SHIFT);  //配置地址转换MMU后输出物理地址的最大值
@@ -58,6 +53,7 @@ init_cpu()
     /*写入tcr_el1寄存器*/
 	asm volatile("msr tcr_el1, %x0"::"rZ"(tcr_reg)); //写入tcr_el1寄存器
 
+    console_puts("[CPU INIT]:CPU INIT FINISHED!\n");
 #endif //__aarch64__
 }
 
@@ -76,7 +72,7 @@ enable_mmu(
 #ifdef __aarch64__
     /*ID_AA64MMFR0_EL1的tgran4字段判断系统是否支持4KB粒度*/
     unsigned long tgran4;
-    asm volatile("mrs %0, " __stringify(ID_AA64MMFR0_EL1) : "=r" (tgran4)); 
+    asm volatile("mrs %0, ID_AA64MMFR0_EL1": "=r" (tgran4):); 
     tgran4 = (tgran4 >> ID_AA64MMFR0_TGRAN4_SHIFT) & 0xF;
     if(tgran4 != ID_AA64MMFR0_TGRAN4_SUPPORTED){            //不支持4KB页面粒度
         return FALSE;
@@ -85,13 +81,13 @@ enable_mmu(
     /*-----------------------------------------------------------
     *设置PGD页表基地址的恒等映射到TTBR0_EL1寄存器中
     -----------------------------------------------------------*/
-    asm volatile("msr " __stringify(TTBR0_EL1) ", %x0"::"rZ"(idmap_pg_dir)); //设置恒等映射页表
+    asm volatile("msr TTBR0_EL1, %x0"::"rZ"(idmap_pg_dir)); //设置恒等映射页表
     asm volatile("isb" : : : "memory");                  
                                                      //CPU重新取指令
     /*-----------------------------------------------------------
     *准备在SCTLR_EL1中使能开启MMU
     -----------------------------------------------------------*/
-    asm volatile("msr " __stringify(SCTLR_EL1) ", %x0"::"rZ"(SCTLR_ELx_M)); //使能MMUSCTLR_ELx_M
+    asm volatile("msr SCTLR_EL1, %x0"::"rZ"(SCTLR_ELx_M)); //使能MMUSCTLR_ELx_M
     asm volatile("isb" : : : "memory");                                      //CPU重新取指令
     asm("ic iallu");                                                         //使得所有指令的高速缓存cache失效
     asm volatile("dsb nsh": : : "memory");                                    //非共享（non-shareable），表示数据同步屏障指令仅仅在当前核起作用

@@ -22,6 +22,7 @@ typedef struct page_global_directory{
 #define pgd_val(x)	((x).pgd)
 #define __pgd(x)	((page_global_directory) { (x) } )
 #define pgd_index(virt)	(((virt) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))     //PGD页表项的索引功能
+#define pgd_entry_offset(pgd,addr) ((pgd) + pgd_index(addr))
 
  /*PGD页表是否抵达最底端(PGD是否越界)*/    
 #define is_pgd_arrive_end(virt,end_virt) ({ \
@@ -41,7 +42,7 @@ typedef struct page_global_directory{
 *------------------------------------------------------------------------------*/
 void set_l0_l1_connection( 
     page_global_directory *pgd,
-    UINT64 pud_addr,
+    phys_addr_t pud_addr,
     pgdval_t attribute
 );
 
@@ -67,15 +68,18 @@ void close_l0_l1_connection(
            5.创建映射的内存属性
            6.页表创建过程的标识位
            7.分配下级页表的内存分配函数
+* @update:
+            2023-3-22 :修复PGD页表项遍历越界的异常BUG
 *------------------------------------------------------------------------------*/
-void __create_pgd_mapping(
+void 
+__create_pgd_mapping(
     page_global_directory *pgd,
-    UINT64 physical_addr,
-    UINT64 virt,                 //映射虚拟地址
+    phys_addr_t physical_addr,
+    phys_addr_t virt,                 //映射虚拟地址
     unsigned long mapping_size,
     unsigned long attribute,
     unsigned long flags,
-    UINT64 (*alloc_method)(void)    //页表PDG的分配方式	
+    phys_addr_t (*alloc_method)(void)    //页表PDG的分配方式	
 );
 
 #endif //_PGD_L0_H_

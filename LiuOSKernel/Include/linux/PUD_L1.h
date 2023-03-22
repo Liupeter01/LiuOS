@@ -22,6 +22,8 @@ typedef struct page_upper_directory{
 *用于服务PUD页表功能函数的宏定义
 -----------------------------------------------------------------*/
 #define pud_index(virt)	(((virt) >> PUD_SHIFT) & (PTRS_PER_PUD - 1))     //PUD页表项的索引功能
+#define pud_offset_physicaladdr(pud_entry,addr) \
+    ((struct page_upper_directory *)(pgd_page_to_physical_address(pud_entry) + pud_index(addr) * sizeof(struct page_upper_directory)))
 
 /*
  * Hardware page table definitions.
@@ -51,7 +53,7 @@ typedef struct page_upper_directory{
 *------------------------------------------------------------------------------*/
 void set_l1_l2_connection( 
     page_upper_directory *pud,
-    UINT64 pmd_addr,
+    phys_addr_t pmd_addr,
     pgdval_t attribute
 );
 
@@ -70,9 +72,8 @@ void close_l1_l2_connection(
 * 创建PUD(L1)的页表映射
 * @name: alloc_pgtable_pud
 * @function: 1.如果pgd中的内容(*pgd)为空，则其中必定没有创建PUDL1页表
-             2.创建PUD(L1)的页表并分配物理内存
-                填充高级PGD的指定页表项链接PUD，形成链接PGD->PUD
-
+             2.创建PUD(L1)的页表并分配物理内存，？？？
+                创建PUD(L1)的页表映射，同时填充高级PGD(L0)的链接地址形成链接PGD->PUD
 * @param : 1.全局目录PGD
            2.虚拟地址起始(为PUD修正后的虚拟地址)
            3.虚拟地址终止(为PUD修正后的虚拟地址)
@@ -80,15 +81,18 @@ void close_l1_l2_connection(
            5.创建映射的内存属性
            6.页表创建过程的标识位
            7.分配下级页表的内存分配函数
+* @update:
+            2023-3-22 :修复PUD页表项遍历越界的异常BUG
 *------------------------------------------------------------------------------*/
-void alloc_pgtable_pud(
+void 
+alloc_pgtable_pud(
     page_global_directory *pgd,
-    UINT64 va_pud_start,            //映射虚拟地址起始
-    UINT64 va_pud_end,              //映射虚拟地址终止
-    UINT64 physical_addr_pud,
+    phys_addr_t va_pud_start,            //映射虚拟地址起始
+    phys_addr_t va_pud_end,              //映射虚拟地址终止
+    phys_addr_t physical_addr_pud,
     unsigned long attribute,
     unsigned long flags,
-    UINT64 (*alloc_method)(void)    //页表PDG的分配方式	
+    phys_addr_t (*alloc_method)(void)    //页表PDG的分配方式	
 );
 
 #endif //_PUD_L1_H_

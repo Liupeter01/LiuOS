@@ -9,7 +9,7 @@ SRC:=$(wildcard *.c \
 			./mm/*.c \
 )
 OBJS:=$(patsubst %.c,%.o,$(SRC))
-CFLAGS:= -no-pie -nostdlib -Wall -g -ffreestanding \
+CFLAGS:= -no-pie -nostdlib -Wall -ffreestanding \
        -I ../LiuOSBoot/Include/SysGraphics/ \
 	   -I ../LiuOSBoot/Include/SysConfig/ \
 	   -I ../LiuOSBoot/Include/FontLoader/ \
@@ -21,7 +21,8 @@ CFLAGS:= -no-pie -nostdlib -Wall -g -ffreestanding \
 	   -I ./Include/linux  \
 	   -I ./Include/boot \
 	   -I ./Include/hardware \
-	   -I ../../BaseTools/Source/C/Include/AArch64/
+	   -I ../../BaseTools/Source/C/Include/AArch64/ \
+	   -g  #debug mode 
 
 #$(TARGET):$(OBJS)
 #	$(CC) $(CFLAGS) $^ -o $@

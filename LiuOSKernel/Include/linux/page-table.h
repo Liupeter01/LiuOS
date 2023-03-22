@@ -149,7 +149,7 @@ void init_memory_bitmap();
 * @function: 获取物理内存的空闲页面
 * @retvalue：返回物理地址
 *------------------------------------------------------------------------------*/
-UINT64 get_free_page();
+phys_addr_t get_free_page();
 
 /*-----------------------------------------------------------------------------
 * 释放物理内存
@@ -163,8 +163,8 @@ void free_page(UINT64 addr);
 * 用于在系统没有初始化页表之前进行内存分配的函数
 * @name: early_pagetable_alloc
 * @function: 分配一个4KB的页面用于页表
-* @param : 1.
+* @retvalue: 返回确切物理地址
 *------------------------------------------------------------------------------*/
-UINT64 early_pagetable_alloc();
+phys_addr_t early_pagetable_alloc();
 
 #endif //_PAGETABLE_H_

@@ -70,6 +70,9 @@ VB   - validity descriptor bit
 *用于服务PUD页表功能函数的宏定义
 -----------------------------------------------------------------*/
 #define pte_index(virt)	(((virt) >> PTE_SHIFT) & (PTRS_PER_PTE - 1))  //PTE页表项的索引功能
+#define pte_offset_physicaladdr(pte_entry,addr) \
+    ((struct page_table_entry *)(pmd_page_to_physical_address(pte_entry) + pte_index(addr) * sizeof(struct page_table_entry)))
+
 
 /*PTE数值和页表的互相转化*/
 #define __pte_to_phys(pte)	(pte_val(pte) & PTE_ADDR_MASK)      //PTE数值转换物理地址
@@ -101,14 +104,15 @@ VB   - validity descriptor bit
            6.页表创建过程的标识位
            7.分配下级页表的内存分配函数
 *------------------------------------------------------------------------------*/
-void alloc_pgtable_pte(
+void 
+alloc_pgtable_pte(
     page_middle_directory *pmd,
-    UINT64 va_pte_start,            //映射虚拟地址起始
-    UINT64 va_pte_end,              //映射虚拟地址终止
-    UINT64 physical_addr_pte,
+    phys_addr_t va_pte_start,            //映射虚拟地址起始
+    phys_addr_t va_pte_end,              //映射虚拟地址终止
+    phys_addr_t physical_addr_pte,
     unsigned long attribute,
     unsigned long flags,
-    UINT64 (*alloc_method)(void)    //页表PDG的分配方式	
+    phys_addr_t (*alloc_method)(void)    //页表PDG的分配方式	
 );
 
 /*-----------------------------------------------------------------------------
@@ -123,7 +127,7 @@ void alloc_pgtable_pte(
 *------------------------------------------------------------------------------*/
 void set_pte_pgtable(
     page_table_entry *pte,
-    UINT64 physical_addr,
+    phys_addr_t physical_addr,
     unsigned long attribute
 );
 

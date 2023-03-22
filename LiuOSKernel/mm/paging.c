@@ -9,18 +9,23 @@
 Bool 
 paging_init()
 {
-    debug_kernel_segment();             //输出内核段信息
     init_memory_bitmap();               //初始化物理内存分配的位图
-    create_identical_mapping();         //创建内核的恒等映射(此模块有BUG！！！！！！！)
+    debug_kernel_segment();             //输出内核段信息
+    create_identical_mapping();         //创建内核的恒等映射
     create_mmio_mapping();              //创建MMIO的恒等映射
 
-    //init_cpu();                         //检查并初始化基础设置
+    init_cpu();                         //检查并初始化基础设置
 
-    //if(!enable_mmu(idmap_pg_dir)){                   //开启MMU
-    //    console_puts("[paging module FAILED]:enable mmu FAILED!\n");
-    //    return FALSE;
-    //}
+    if(!enable_mmu(idmap_pg_dir)){                   //开启MMU
+        console_puts("[paging module FAILED]:enable mmu FAILED!\n");
+        return FALSE;
+    }
     console_puts("[paging module SUCCESSED]:enable mmu successed!\n");
+    
+    char str[256] = {"current addr = "};
+    itoa((int)paging_init,str+strlen(str),16);
+    console_puts(str);
+    console_putc('\n');
 
     /*将内核文件代码段.text映射到swapper_pg_dir PGD*/
     map_kernel_segment((page_global_directory *)swapper_pg_dir, (void*)_text_start, (void*)_text_end, NULL);
@@ -39,49 +44,54 @@ paging_init()
 void create_identical_mapping()
 {
     /*代码段恒等映射*/
-    UINT64 address_start = (UINT64)_text_start;   //代码段起始
-    UINT64 address_end = (UINT64)_text_end;       //代码段终止
-    UINT64 area_size = address_end - address_start;      //代码段长度
+	phys_addr_t  address_start = (phys_addr_t)_text_start;   	//代码段起始
+    phys_addr_t address_end = (phys_addr_t)_text_end;       	//代码段终止
+    unsigned long area_size = address_end - address_start;      //代码段长度
 
-    __create_pgd_mapping(                       //创建代码段恒等映射
-        (page_global_directory *)idmap_pg_dir, //PGD
-        (UINT64)address_start,          //物理起始地址
-        (UINT64)address_start,          //映射虚拟地址
-        area_size,                             //区域长度
-        PAGE_KERNEL_ROX,                       //属性只读可执行
+	console_puts("[IDENTICAL MAPPING PROCESS]:START SEGMENT IDENTICAL MAPPING PROCESS NOW\n");
+    __create_pgd_mapping(                       				//创建代码段恒等映射
+        (page_global_directory *)idmap_pg_dir, 					//PGD恒等映射
+        address_start,          								//物理起始地址
+        address_start,          								//映射虚拟地址
+        area_size,                             					//区域长度
+        PAGE_KERNEL_ROX,                       					//属性只读可执行
         0,
         early_pagetable_alloc
     );
+	console_puts("[IDENTICAL MAPPING PROCESS]: TEXT SEGMENT IDENTICAL MAPPING FINISHED!\n");
 
     /*只读数据段恒等映射*/
-    address_start = (UINT64)_data_start;             //只读数据段起始
-    address_end = (UINT64)_data_end;                 //只读数据段终止
-    area_size = address_end - address_start;                //只读数据段长度
+    address_start = (phys_addr_t)_rodata_start;             	//只读数据段起始
+    address_end = (phys_addr_t)_rodata_end;                 	//只读数据段终止
+    area_size = address_end - address_start;                	//只读数据段长度
 
-     __create_pgd_mapping(                       //创建只读数据段恒等映射
-        (page_global_directory *)idmap_pg_dir,   //创建恒等映射
-        (UINT64)address_start,            //物理起始地址
-        (UINT64)address_start,            //映射虚拟地址
-        area_size,                               //区域长度
-        PAGE_KERNEL_RO,                          //属性内核只读普通页面
+     __create_pgd_mapping(                       				//创建只读数据段恒等映射
+        (page_global_directory *)idmap_pg_dir,   				
+        address_start,            								
+        address_start,            
+        area_size,                               
+        PAGE_KERNEL_RO,                          				//属性内核只读普通页面
         0,
         early_pagetable_alloc
     );
-
+	console_puts("[IDENTICAL MAPPING PROCESS]: RODATA SEGMENT IDENTICAL MAPPING FINISHED!\n");
+	
     /*数据段恒等映射*/
-    address_start = (UINT64)_data_start;      //数据段起始
-    address_end = (UINT64)_data_end;          //数据段终止
-    area_size = address_end - address_start;         //数据段长度
+    address_start = (phys_addr_t)_data_start;      				//数据段起始
+    address_end = (phys_addr_t)_data_end;          				//数据段终止
+    area_size = address_end - address_start;         			//数据段长度
     
-    __create_pgd_mapping(                           //创建数据段恒等映射
-        (page_global_directory *)idmap_pg_dir,      //创建恒等映射
-        (UINT64)address_start,               //物理起始地址
-        (UINT64)address_start,               //映射虚拟地址
-        area_size,                                  //区域长度
-        PAGE_KERNEL,                                //属性内核普通内存页面
+    __create_pgd_mapping(                           			//创建数据段恒等映射
+        (page_global_directory *)idmap_pg_dir,      			
+        address_start,               
+        address_start,               
+        area_size,           
+        PAGE_KERNEL,                                			//属性内核普通内存页面
         0,
         early_pagetable_alloc
     );
+	console_puts("[IDENTICAL MAPPING PROCESS]: DATA SEGMENT IDENTICAL MAPPING FINISHED!\n");
+    console_puts("[IDENTICAL MAPPING SUCCESSED]: identical mapping successed!\n");
 }
 
 /*-----------------------------------------------------------------------------

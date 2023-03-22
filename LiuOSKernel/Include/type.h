@@ -25,7 +25,7 @@ typedef UINT64 pteval_t;        //PTE
 typedef UINT64 pmdval_t;        //PMD
 typedef UINT64 pudval_t;        //PUD
 typedef UINT64 pgdval_t;        //PGD
-typedef UINT32 phys_addr_t;     //物理地址
+typedef UINT64 phys_addr_t;     //物理地址
 
 /*----------------------------------------------------------
 *物理地址转换为虚拟地址(线性映射)

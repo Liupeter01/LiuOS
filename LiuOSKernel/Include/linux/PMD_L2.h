@@ -22,6 +22,8 @@ typedef struct page_middle_directory{
 *用于服务PUD页表功能函数的宏定义
 -----------------------------------------------------------------*/
 #define pmd_index(virt)	(((virt) >> PMD_SHIFT) & (PTRS_PER_PMD - 1))     //PUD页表项的索引功能
+#define pmd_offset_physicaladdr(pmd_entry,addr) \
+    ((struct page_middle_directory *)(pud_page_to_physical_address(pmd_entry) + pmd_index(addr) * sizeof(struct page_middle_directory)))
 
 /*
  * Level 2 descriptor (PMD).
@@ -50,7 +52,7 @@ typedef struct page_middle_directory{
 *------------------------------------------------------------------------------*/
 void set_l2_l3_connection( 
     page_middle_directory *pmd,
-    UINT64 pte_addr,
+    phys_addr_t pte_addr,
     pgdval_t attribute
 );
 
@@ -78,15 +80,17 @@ void close_l2_l3_connection(
            5.创建映射的内存属性
            6.页表创建过程的标识位
            7.分配下级页表的内存分配函数
+* @update:
+            2023-3-22 :修复PMD页表项遍历越界的异常BUG
 *------------------------------------------------------------------------------*/
 void alloc_pgtable_pmd(
     page_upper_directory *pud,
-    UINT64 va_pmd_start,            //映射虚拟地址起始
-    UINT64 va_pmd_end,              //映射虚拟地址终止
-    UINT64 physical_addr_pmd,
+    phys_addr_t va_pmd_start,            //映射虚拟地址起始
+    phys_addr_t va_pmd_end,              //映射虚拟地址终止
+    phys_addr_t physical_addr_pmd,
     unsigned long attribute,
     unsigned long flags,
-    UINT64 (*alloc_method)(void)    //页表PDG的分配方式	
+    phys_addr_t (*alloc_method)(void)    //页表PDG的分配方式	
 );
 
 #endif //_PMD_L2_H_

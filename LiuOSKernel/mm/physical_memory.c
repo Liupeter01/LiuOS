@@ -11,6 +11,8 @@ unsigned short memory_map[NR_PAGES] = {OS_MEMORY_UNKOWN};
 * 初始化物理内存分配的位图
 * @name: init_memory_bitmap
 * @function: 初始化物理内存分配的位图用于空闲内存分配
+* @update:
+		2023-3-22 需修复重大程序bug，疏漏mm[i].NumberOfPages导致物理内存初始化错误
 *------------------------------------------------------------------------------*/
 void init_memory_bitmap()
 {
@@ -18,7 +20,7 @@ void init_memory_bitmap()
     for(int i = 0 ; i < g_MemoryDistribution.m_infoCount ; ++i){
         if(CONVERT_BYTES_TO_PAGES(mm[i].PhysicalStart) < NR_PAGES){
             for(UINT64 start =  CONVERT_BYTES_TO_PAGES(mm[i].PhysicalStart) ;
-			    start < CONVERT_BYTES_TO_PAGES(mm[i].PhysicalStart) ; start++ )
+			    start < CONVERT_BYTES_TO_PAGES(mm[i].PhysicalStart) + mm[i].NumberOfPages; start++ )
 			{
                 memory_map[start] = mm[i].Type;
             }
@@ -33,7 +35,8 @@ void init_memory_bitmap()
 * @function: 获取物理内存的空闲页面
 * @retvalue：返回物理地址
 *------------------------------------------------------------------------------*/
-UINT64 get_free_page()
+phys_addr_t 
+get_free_page()
 {
     for(UINT64 i = 0;i < NR_PAGES ; ++i){
         if(memory_map[i] == OS_MEMORY_UNUSED){
@@ -50,7 +53,8 @@ UINT64 get_free_page()
 * @function: 释放物理内存
 * @param:1.传入地址
 *------------------------------------------------------------------------------*/
-void free_page(UINT64 addr)
+void 
+free_page(UINT64 addr)
 {
     memory_map[addr / PAGE_SIZE] =  OS_MEMORY_UNUSED;   //释放
 }
@@ -59,11 +63,12 @@ void free_page(UINT64 addr)
 * 用于在系统没有初始化页表之前进行内存分配的函数
 * @name: early_pagetable_alloc
 * @function: 分配一个4KB的页面用于页表
-* @param : 1.
+* @retvalue: 返回确切物理地址
 *------------------------------------------------------------------------------*/
-UINT64 early_pagetable_alloc()
+phys_addr_t 
+early_pagetable_alloc()
 {
-    UINT64 physcial_addr = get_free_page();
+    phys_addr_t physcial_addr = get_free_page();
     memset((void*)physcial_addr,0,PAGE_SIZE);
     return physcial_addr;
 }
