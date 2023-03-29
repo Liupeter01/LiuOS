@@ -9,45 +9,43 @@
 [Sources]
 
 #UEFI总头文件
-    LiuOSBoot/Include/SysConfig/CommonHeaders.h			#共同依赖的头文件
-
-#UEFI系统BootLoader阶段的所有重要参数设置
-    LiuOSBoot/Include/SysConfig/BootLoaderConf.h			#包含图像协议和文件系统协议，系统分辨率，系统启动图像设置
-
-#UEFI系统为加载的Kernel文件进行参数传递
-    LiuOSBoot/Include/SysConfig/RunTimeKernelConf.h
-
-#UEFI系统的Kernel的ELF文件加载器
-    LiuOSBoot/Include/KernelLoader/KernelLoader.h
-    LiuOSBoot/Library/KernelLoader/KernelLoader.c
-
-#UEFI系统的通用文件加载器
-    LiuOSBoot/Include/GeneralFileLoader/GeneralFileLoader.h
-    LiuOSBoot/Library/GeneralFileLoader/GeneralFileLoader.c
+    LiuOSBoot/Include/boottype.h		#包含图像协议和文件系统协议，系统分辨率，系统启动图像设置
 
 #UEFI系统的实用工具
-    LiuOSBoot/Include/Tools/Tools.h     #系统需要的使用工具
-    LiuOSBoot/Library/Tools/Tools.c     #系统需要的使用工具
-
-#UEFI系统的日志系统
-    LiuOSBoot/Include/SysLog/SysLog.h
-    LiuOSBoot/Library/SysLog/SysLog.c
+    LiuOSBoot/Include/tools/tools.h     #系统需要的使用工具
+    LiuOSBoot/Library/tools.c     		#系统需要的使用工具
 
 #UEFI系统BootLoader图形控制
-    LiuOSBoot/Include/SysGraphics/SysGraphics.h
-    LiuOSBoot/Library/SysGraphics/SysGraphics.c
-
-#UEFI系统启动画面的设置
-    LiuOSBoot/Include/Logo/StartLogo.h
-    LiuOSBoot/Library/Logo/StartLogo.c
+    LiuOSBoot/Include/bootloader/console_graphic.h
+    LiuOSBoot/Library/graphic.c
 
 #UEFI系统字体位图文件加载
-    LiuOSBoot/Include/FontLoader/FontLoader.h
-    LiuOSBoot/Library/FontLoader/FontLoader.c
+    LiuOSBoot/Include/bootloader/console_font.h		#字体文件
 
-#UEFI系统内存布局
-    LiuOSBoot/Include/Memory/GetMemoryData.h
-    LiuOSBoot/Library/Memory/GetMemoryData.c
+#UEFI系统启动画面的设置
+    LiuOSBoot/Include/bootloader/console_logo.h
+	
+#UEFI系统内核的所有重要参数设置
+	LiuOSBoot/Include/kernelloader/kernel_struct.h
+	
+#UEFI系统内核的MMU
+	LiuOSBoot/Include/kernelloader/kernel_paging.h
+	LiuOSBoot/Library/mem_paging.c
+	
+#UEFI系统内核的ELF文件加载器
+	LiuOSBoot/Include/kernelloader/kernel_reader.h
+	LiuOSBoot/Library/kernel.c
+
+#UEFI系统内核的硬件定义数据
+	LiuOSBoot/Include/kernelloader/os_hardwaredef.h
+
+#UEFI页表数据结构
+	LiuOSBoot/Include/pagetable/page_table.h
+	LiuOSBoot/Include/pagetable/PGD_L0.h
+	LiuOSBoot/Include/pagetable/PUD_L1.h
+	LiuOSBoot/Include/pagetable/PMD_L2.h
+	LiuOSBoot/Include/pagetable/PTE_L3.h
+	LiuOSBoot/Library/page_table.c
 
 #UEFI主程序
     LiuOSBoot/Library/main.c          
