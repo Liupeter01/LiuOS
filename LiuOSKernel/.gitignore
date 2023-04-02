@@ -1,0 +1,17 @@
+# Build stuff
+build
+*.img
+*.elf
+*.bin
+
+# Release stuff (Compressed)
+*.gz
+*.zip
+
+# VS Code configs
+.vscode/
+
+# Doxygen stuff
+html
+latex
+man
