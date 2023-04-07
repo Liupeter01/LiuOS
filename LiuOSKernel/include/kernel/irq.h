@@ -14,9 +14,16 @@
 #include <kernel/printk.h>
 #include <driver/uart.h>
 #include <kernel/timer.h>
-
 #include <peripherals/irq.h>
 #include <peripherals/auxiliary.h>
+
+/**
+ * Initializes interrupts, by setting the address of the Vector Base Address
+ * Register (vbar_el1) to our vector table address.
+ * @see irq.S
+ */
+void irq_vector_init();
+
 /**
  * Enables System Timer and UART interrupts.
  * @see peripherals/irq.h
@@ -44,6 +51,12 @@ void show_invalid_entry_message(int type, unsigned long esr, \
  * @see handle_timer_1_irq(), handle_timer_3_irq(), handle_uart_irq()
  */
 void handle_irq();
+
+/** 单核CPU开中断 */
+void irq_enable();
+
+/** 单核CPU关中断 */
+void irq_disable();
 
 /** @} */
 

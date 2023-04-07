@@ -29,7 +29,6 @@
  */
 void create_processes(size_t proc_num);
 
-
 /**
  * \ingroup processes
  * Kills all running processes (except `init_task`).

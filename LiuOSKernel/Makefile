@@ -2,7 +2,7 @@ ARMSTUB_NAME = armstub-new
 #不添加-mgeneral-regs-only命令操作系统无法执行!!!!!
 SFLAGS = -mcpu=cortex-a72 -fPIC -ffreestanding -nostdlib -nostartfiles  \
 		-mgeneral-regs-only -D MODEL_4 -D AARCH_64
-CFLAGS = -O2 -Wall -Wextra -g
+CFLAGS = -O0 -Wall -Wextra -g
 LDFLAGS = -ffreestanding -nostdlib
 
 ASM_FILES = $(wildcard src/kernel/*.S)

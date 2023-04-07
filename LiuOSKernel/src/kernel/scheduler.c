@@ -9,7 +9,7 @@
 
 #include <kernel/scheduler.h>
 #include <kernel/printk.h>
-#include <armv8-a/irq.h>
+#include <kernel/irq.h>
 
 /** The first task that is run on kernel startup. */
 static task_struct init_task = INIT_TASK;

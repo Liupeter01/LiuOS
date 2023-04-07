@@ -66,22 +66,19 @@ master:
     orr     x0, x0, #3
     msr     cnthctl_el2, x0
     msr     cntvoff_el2, xzr
-
 	eret
 
-	/* Code executing only by main core (cpu id == 0) */
 el1_entry:
-	/*
+	/* Code executing only by main core (cpu id == 0) 
 	 * With the latest firmware, only the primary core runs (core 0), and
 	 * the secondary cores are awaiting in a spin loop.
 	 */
-
-	/*boot.S*/
 	adrp x0,init_stktop	//获取栈的绝对地址
 	mov sp, x0		// Setup the stack (64 bit).
 
 	ldr x5, =__bss_start		// Clear out BSS.
 	ldr w6, =__bss_size
+
 clear_bss:
 	cbz w6, kernel_entry
 	str xzr, [x5], #8

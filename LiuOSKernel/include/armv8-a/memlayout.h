@@ -40,6 +40,11 @@ extern volatile uchar *kernel_gic_base;
  * aux Base Address, we consider about vitual mmio mapping problem
  */
 extern volatile uchar *kernel_aux_base;
+
+/**
+ * irq Base Address, we consider about vitual mmio mapping problem
+ */
+extern volatile uchar *kernel_irq_base;
 #endif
 
 #define V2P(a) (((uint64) (a)) - (uint64)KERNBASE)
@@ -72,6 +77,12 @@ extern volatile uchar *kernel_aux_base;
  * AUX physical address (PA)
  */
 #define AUX_BASE  0x15000
+
+/**
+ * \ingroup peripherals
+ * IRQ physical address (PA)
+ */
+#define IRQ_BASE 0xB000
 /** @} */
 
 #endif //_MEMLAYOUT_H_

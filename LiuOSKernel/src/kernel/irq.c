@@ -7,6 +7,11 @@
 #include <kernel/irq.h>
 
 /**
+ * irq Base Address, we consider about vitual mmio mapping problem
+ */
+volatile uchar *kernel_irq_base;
+
+/**
  * String array, for the invalid exception type messages.
  */
 const char entry_error_messages[16][32] = {
@@ -31,9 +36,18 @@ const char entry_error_messages[16][32] = {
 	"ERROR_INVALID_EL0_32"
 };
 
+/**
+ * Enables System Timer and UART interrupts.
+ * @see peripherals/irq.h
+ */
 void enable_interrupt_controller()
 {
-	mmio_write(IRQ0_SET_EN_0, /* AUX_IRQ | */ SYSTEM_TIMER_IRQ_1 | SYSTEM_TIMER_IRQ_3);
+	kernel_irq_base = &kernel_gpio_base[IRQ_BASE];
+	mmio_write(
+		(uint64_t)(&kernel_irq_base[IRQ0_SET_EN_0]), 			//使能中断控制器
+		/* AUX_IRQ | */ 
+		SYSTEM_TIMER_IRQ_1 | SYSTEM_TIMER_IRQ_3		//启动两个时钟中断(一个控制时间片另一个用于其他用途)
+	);
 }
 
 void show_invalid_entry_message(int type, uint64_t esr, uint64_t address)
@@ -45,7 +59,7 @@ void show_invalid_entry_message(int type, uint64_t esr, uint64_t address)
 
 void handle_irq()
 {
-	uint32_t irq = mmio_read(IRQ0_PENDING_0);
+	uint32_t irq = mmio_read((uint64_t)(&kernel_irq_base[IRQ0_PENDING_0]));
 
 	/* While we have a valid value from the interrupt */
 	while (irq) {
