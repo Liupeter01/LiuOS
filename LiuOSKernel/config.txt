@@ -1,0 +1,26 @@
+core_freq_min=500
+
+uart_2ndstage=1
+# Causes bootcode.bin to output diagnostic information to UART0.
+
+armstub=armstub-new.bin
+# Sets the custom stub, that is run before the kernel and set up low-level
+# hardware like the interrupt controller before passing control to the kernel.
+
+# kernel_old=1
+# loads the kernel to the memory address 0x0
+# Start at Exception Level 3
+
+#dtoverlay=miniuart-bt
+# Bluetooth uses 'ttyS0' (miniUART device) internally and
+# UART uses 'ttyAMA0' (first PL011 (UART0)) as the Serial Port on GPIO pins 14,15
+
+arm_64bit=1 
+enable_uart=1 
+uart_2ndstage=1 
+
+enable_jtag_gpio=1
+gpio=22-27=a4
+init_uart_clock=48000000
+init_uart_baud=115200
+kernel=kernel8.img

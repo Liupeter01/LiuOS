@@ -1,0 +1,348 @@
+﻿.globl get_el
+get_el:
+	mrs x0, CurrentEL
+	lsr x0, x0, #2
+	ret
+
+.globl get_current_el
+get_current_el:
+    mrs x0, currentel
+    mov x1, #2
+    lsr x0, x0, #2
+    ret
+
+.globl jump_to_el0
+jump_to_el0:
+    mov x1, x0
+    mrs x0, currentel       // check if in el2
+    cmp x0, #8
+    beq 2f
+
+    // ldr x0, =0xe00000
+    // msr sp_el0, x0          // init the stack of el0
+
+    // return to el0 from el1
+    mov x0, #0x0
+    msr spsr_el1, x0        // el0 with DAIF = 0
+    msr elr_el1, x1
+    eret
+2:
+    ret
+
+.globl tlb_invalidate
+tlb_invalidate:
+    dsb ishst               // ensure write has completed
+    tlbi vmalle1is          // invalidate tlb, all asid, el1.
+    dsb ish                 // ensure completion of tlb invalidation
+    isb                     // synchronize context and ensure that no instructions
+                            // are fetched using the old translation
+    ret
+
+// dcahe_invalidate(void *va_start, void *va_end)
+.global dcache_invalidate
+dcache_invalidate:
+        // flush D
+        mrs x2, ctr_el0
+        ubfx x4, x2, #16, #4
+        mov x3, #4
+        lsl x3, x3, x4
+        sub x4, x3, #1
+        bic x4, x0, x4
+dci:
+        dc civac, x4
+        add x4, x4, x3
+        cmp x4, x1
+        b.lt dci
+        
+        dsb ish
+        isb
+
+        ret
+
+// cache_flush(void *va_start, void *va_end)
+.global cache_flush
+cache_flush:
+        // flush D
+        mrs x2, ctr_el0
+        ubfx x4, x2, #16, #4
+        mov x3, #4
+        lsl x3, x3, x4
+        sub x4, x3, #1
+        bic x4, x0, x4
+cdc:
+        dc cvau, x4
+        add x4, x4, x3
+        cmp x4, x1
+        b.lt cdc
+        
+        dsb ish
+
+        // flush I
+        and x2, x2, #0xf
+        mov x3, #4
+        lsl x3, x3, x2
+        sub x4, x3, #1
+        bic x4, x0, x4
+cic:
+        ic ivau, x4
+        add x4, x4, x3
+        cmp x4, x1
+        b.lt cic
+
+        dsb ish
+        isb
+
+        ret
+
+
+.globl put32
+put32:
+    str w1,[x0]
+    ret
+
+.globl get32
+get32:
+    ldr w0,[x0]
+    ret
+
+.globl dummy
+dummy:
+    ret
+
+.globl load_ttbr0_context
+load_ttbr0_context:
+    msr ttbr0_el1, x0
+    ret
+
+.globl load_ttbr1_context
+load_ttbr1_context:
+    msr ttbr1_el1, x0
+    ret
+
+.globl get_sctlr_el1
+get_sctlr_el1:
+    mrs x0, sctlr_el1
+    ret
+
+.globl get_esr
+get_esr:
+    mrs x0, esr_el1
+    ret
+
+.globl get_spsr
+get_spsr:
+    mrs x0, spsr_el1
+    ret
+
+.globl get_elr
+get_elr:
+    mrs x0, elr_el1
+    ret
+
+.globl get_far
+get_far:
+    mrs x0, far_el1
+    ret
+
+
+#include <armv8-a/entry.h>
+
+/*
+ * Macro for creating entries in the vector table.
+ * Jump to the label that is provided for the macro as label argument.
+ * All except. vectors should be located at offset 0x80 bytes one from another.
+ */
+.macro ventry label
+.align 7
+	b \label
+.endm
+
+/*
+ * Macro for storing registers x0 - x30 to the stack, at the start of an
+ * interrupt.
+ */
+	/* stp: Stores a pair of registers */
+.macro kernel_entry
+	sub sp,  sp,  #S_FRAME_SIZE
+	stp x0,  x1,  [sp, #16 * 0]
+	stp x2,  x3,  [sp, #16 * 1]
+	stp x4,  x5,  [sp, #16 * 2]
+	stp x6,  x7,  [sp, #16 * 3]
+	stp x8,  x9,  [sp, #16 * 4]
+	stp x10, x11, [sp, #16 * 5]
+	stp x12, x13, [sp, #16 * 6]
+	stp x14, x15, [sp, #16 * 7]
+	stp x16, x17, [sp, #16 * 8]
+	stp x18, x19, [sp, #16 * 9]
+	stp x20, x21, [sp, #16 * 10]
+	stp x22, x23, [sp, #16 * 11]
+	stp x24, x25, [sp, #16 * 12]
+	stp x26, x27, [sp, #16 * 13]
+	stp x28, x29, [sp, #16 * 14]
+
+	/*
+	 * Because of context switching, it is possible to enter the interrupt
+	 * as one task, and exit as a different one.
+	 * eret, relies on the fact that return address is stored in elr_el1
+	 * and processor state in spsr_el1.
+	 * In order to switch tasks will processing an interrupt, we must save
+	 * these 2 registers, alongside the other general purpose registers.
+	 */
+	mrs x22, elr_el1
+	mrs x23, spsr_el1
+
+	stp x30, x22, [sp, #16 * 15]
+	str x23,      [sp, #16 * 16]
+.endm
+
+/*
+ * Macro for restoring the processor state by copying back the values of
+ * x0 - x30 registers at the end of an interrupt.
+ */
+	/* ldp: Loads a pair of registers */
+.macro kernel_exit
+
+	/*
+	 * Because of context switching, we do the opposite from kernel_entry.
+	 * We restore elr_el1 and spsr_el1, before restoring the other
+	 * general purpose registers.
+	 */
+	ldr x23,      [sp, #16 * 16]
+	ldp x30, x22, [sp, #16 * 15]
+
+	msr elr_el1, x22
+	msr spsr_el1, x23
+
+	ldp x0,  x1,  [sp, #16 * 0]
+	ldp x2,  x3,  [sp, #16 * 1]
+	ldp x4,  x5,  [sp, #16 * 2]
+	ldp x6,  x7,  [sp, #16 * 3]
+	ldp x8,  x9,  [sp, #16 * 4]
+	ldp x10, x11, [sp, #16 * 5]
+	ldp x12, x13, [sp, #16 * 6]
+	ldp x14, x15, [sp, #16 * 7]
+	ldp x16, x17, [sp, #16 * 8]
+	ldp x18, x19, [sp, #16 * 9]
+	ldp x20, x21, [sp, #16 * 10]
+	ldp x22, x23, [sp, #16 * 11]
+	ldp x24, x25, [sp, #16 * 12]
+	ldp x26, x27, [sp, #16 * 13]
+	ldp x28, x29, [sp, #16 * 14]
+	add sp, sp, #S_FRAME_SIZE
+	eret
+.endm
+
+
+/*
+ * Macro for handlers that should never be executed in normal flow.
+ * We call the C function show_invalid_entry_message, in order to print
+ * information about the error, and the processor is put in an infinite loop.
+ *
+ * #\type:  Invalid type defined in <armv8-a/entry.h>
+ * esr_el1: Exception Syndrome Register (ESR) contains detailed information
+ 		about what causes an exception.
+ * elr_el1: Exception Link Register (ELR) contains the address of the
+ 		instruction that had been executed when the exception
+		was generated (for synchronous interrupts).
+ */
+.macro handle_invalid_entry type
+	kernel_entry
+	mov x0, #\type
+	mrs x1, esr_el1
+	mrs x2, elr_el1
+	bl show_invalid_entry_message
+	b err_hang
+.endm
+
+
+/*
+ * Exception vector table.
+ * 16 entries created with the ventry macro.
+ * For each exception we jump to the corresponding label (handler).
+ */
+.align 11
+.globl vectors
+vectors:
+	ventry sync_invalid_el1t	/* Synchronous EL1t */
+	ventry irq_invalid_el1t		/* IRQ EL1t         */
+	ventry fiq_invalid_el1t		/* FIQ EL1t         */
+	ventry error_invalid_el1t	/* Error EL1t       */
+
+	ventry sync_invalid_el1h	/* Synchronous EL1h */
+	ventry el1_irq			/* IRQ EL1h         */
+	ventry fiq_invalid_el1h		/* FIQ EL1h         */
+	ventry error_invalid_el1h	/* Error EL1h       */
+
+	ventry sync_invalid_el0_64	/* Synchronous 64-bit EL0 */
+	ventry irq_invalid_el0_64	/* IRQ 64-bit EL0         */
+	ventry fiq_invalid_el0_64	/* FIQ 64-bit EL0         */
+	ventry error_invalid_el0_64	/* Error 64-bit EL0       */
+
+	ventry sync_invalid_el0_32	/* Synchronous 32-bit EL0 */
+	ventry irq_invalid_el0_32	/* IRQ 32-bit EL0         */
+	ventry fiq_invalid_el0_32	/* FIQ 32-bit EL0         */
+	ventry error_invalid_el0_32	/* Error 32-bit EL0       */
+
+/*
+ * Implementation of exception handlers.
+ */
+
+ /* For other exceptions: We call the handle_invalid_entry macro,
+	with the corresponding invalid exception type value. */
+sync_invalid_el1t:
+	handle_invalid_entry SYNC_INVALID_EL1t
+
+irq_invalid_el1t:
+	handle_invalid_entry IRQ_INVALID_EL1t
+
+fiq_invalid_el1t:
+	handle_invalid_entry FIQ_INVALID_EL1t
+
+error_invalid_el1t:
+	handle_invalid_entry ERROR_INVALID_EL1t
+
+sync_invalid_el1h:
+	handle_invalid_entry SYNC_INVALID_EL1h
+
+fiq_invalid_el1h:
+	handle_invalid_entry FIQ_INVALID_EL1h
+
+error_invalid_el1h:
+	handle_invalid_entry ERROR_INVALID_EL1h
+
+sync_invalid_el0_64:
+	handle_invalid_entry SYNC_INVALID_EL0_64
+
+irq_invalid_el0_64:
+	handle_invalid_entry IRQ_INVALID_EL0_64
+
+fiq_invalid_el0_64:
+	handle_invalid_entry FIQ_INVALID_EL0_64
+
+error_invalid_el0_64:
+	handle_invalid_entry ERROR_INVALID_EL0_64
+
+sync_invalid_el0_32:
+	handle_invalid_entry SYNC_INVALID_EL0_32
+
+irq_invalid_el0_32:
+	handle_invalid_entry IRQ_INVALID_EL0_32
+
+fiq_invalid_el0_32:
+	handle_invalid_entry FIQ_INVALID_EL0_32
+
+error_invalid_el0_32:
+	handle_invalid_entry ERROR_INVALID_EL0_32
+
+/* For IRQ EL1h: We call the exception handler handle_irq from C code. */
+el1_irq:
+	kernel_entry
+	bl handle_irq
+	kernel_exit
+
+/*
+ * Function for putting the processor in an infinite loop, in case of error.
+ */
+.globl err_hang
+err_hang:
+	b err_hang
