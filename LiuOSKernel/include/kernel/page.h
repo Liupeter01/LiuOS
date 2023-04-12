@@ -85,16 +85,4 @@
 #define PMD_SECT_CONT		(1 << 52)
 #define PMD_SECT_PXN		(1 << 53)
 #define PMD_SECT_UXN		(1 << 54)
-
-//#define MT_NORMAL 2
-//#define PTE_ATTRINDX(t)		((t) << 2)
-
-#define SWAPPER_PMD_FLAGS	(PMD_TYPE_SECT | PMD_SECT_AF | PMD_SECT_S)
-#define SWAPPER_BLOCK_SHIFT	(SECTION_SHIFT)     //21
-#define SWAPPER_BLOCK_SIZE	(SECTION_SIZE)      //2M
-#define SWAPPER_TABLE_SHIFT	21
-#define SWAPPER_MM_MMUFLAGS	(8 | SWAPPER_PMD_FLAGS)
-
-#define BLOCK_ENTRY_PTE (PTE_AF | PTE_NORMAL | PTE_VALID)
-
 #endif //_PAGE_H_

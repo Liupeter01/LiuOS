@@ -70,8 +70,9 @@ extern volatile uchar *kernel_irq_base;
  * AUX physical address (PA)
  * IRQ physical address (PA)
  */
+#define MMIO_KERNEL_BASE 0xffffffff00000000	
 #define MMIO_BASE  0xFE000000
-#define MMIO_END  0x100000000L
+#define MMIO_END  0x100000000
 
 #define GPIO_BASE (MMIO_BASE + 0x200000)
 #define GIC_BASE  (MMIO_BASE + 0x15000)

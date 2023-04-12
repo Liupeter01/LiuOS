@@ -29,18 +29,18 @@ SECTIONS
         . += 0x1000;
 
         _U_l2_pgtbl = .;
-        . += 0x4000;
+        . += 0x1000;
         /*内核PMD页表，PUD有512个条目，指向512个大小为4096B的PMD*/
         _K_l2_pgtbl = .;
-        . += 0x4000;
+        . += 0x1000;
 
         _D_l2_pgtbl = .;
-        . += 0x4000;
+        . += 0x1000;
         
         __end_init = .;
     }
 
-    . = PHY_START + KERNERL_BASE; 
+    . = KERNERL_BASE + __end_init; 
      PROVIDE (__start_kernel = .);
     .text : AT(__end_init)
     { 

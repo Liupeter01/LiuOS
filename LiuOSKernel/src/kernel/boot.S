@@ -111,7 +111,7 @@ create_kernel_linear:
 	adrp x1,  __end_init				// start pa
 	add x2, x1, x3						// end pa
 
-	ldr x4, =(KERNBASE + PHY_START) 		//start va
+	ldr x4, =(KERNBASE) 	//start va
 	add x5, x4, x3						// end va
 
 	/*用于计算PMD(L2)页表的下标*/
@@ -146,34 +146,35 @@ create_gpio_mapping:
 	adrp x0, _D_l2_pgtbl 				//KERNEL L2 PMD
 	mov x1, #MMIO_BASE 					// start mmio pa
     mov x2, #MMIO_END-1   				// end mmio pa
-	mov x3, #KERNBASE
+	mov x3, #MMIO_KERNEL_BASE
 	add x4, x1, x3						// start mmio va
 	add x5, x2, x3						// end mmio va
 
+	/*用于计算PMD(L2)页表的下标*/
 	lsr x6, x4, #PXSHIFT(2)				//计算start mmio va PMD偏移(1F0)
 	and x6, x6, #0x1FF					//x6 & 1FF
-
-	lsr x7, x5, #PXSHIFT(2)				//计算end mmio va  PMD偏移
+	lsr x7, x5, #PXSHIFT(2)				//计算end mmio va  PMD偏移(1FF)
 	and x7, x7, #0x1FF					//x7 & 1FF
 
-	mov x8, #(PTE_AF | PTE_DEVICE | PTE_VALID) //设备内存
-	orr x9, x1, x8      // block entry
+	/*用于计算PMD(L2)页表的属性*/
+	ldr x8, =DEVICE_MEMORY_BLOCK_MAPPING //设备内存
+	and x9, x1, #PMD_MASK				//phys = phys & PMD_MASK
 
 gpio_segment_loop:
-	str x9 ,[x0, x6 , lsl #3]			//_K_l2_pgtbl[x6 * 8] = x9
+	orr x10, x9, x8      				// block entry
+	str x10 ,[x0, x6 , lsl #3]			//_D_l2_pgtbl[x6 * 8] = x10
 	add x6 ,x6 ,#1						//x6 += 1
 	add x9 ,x9 ,#INIT_KERN_SZ			//X9 += 0x200000
 	cmp x6, x7
 	b.ls gpio_segment_loop				//start mmio va < end mmio va
 
 	adrp x0, swapper_pg_dir				//KERNEL L1 PGD
-	lsr x5, x4 , #PXSHIFT(1)			//访问PGD编号
-	and x5, x5, #PXMASK					//x5 & 1FF
+	lsr x5, x4 ,#PXSHIFT(1)				//访问PGD编号
+	and x5, x5 ,#PXMASK					//x5 & 1FF
 
 	mov x6, #(PTE_TABLE | PTE_VALID)    // entry attr
 	adrp x7, _D_l2_pgtbl
 	orr x8, x6, x7
-
 	str x8 , [x0, x5, lsl #3]			//swapper_pg_dir[x5 *8] = _D_l2_pgtbl
 
 load_mmu:
