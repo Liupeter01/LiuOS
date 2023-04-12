@@ -60,3 +60,17 @@ int printk(const char *fmt, ...)
 
 	return 0;
 }
+
+/**
+ * Prints startup message
+ * @see printk()
+ */
+void setupLogo()
+{
+	printk(" \n\n_     _        ___  ____  \n");
+	printk("| |   (_)_   _ / _ \\/ ___| \n");
+	printk("| |   | | | | | | | \\___ \\ \n");
+	printk("| |___| | |_| | |_| |___) |\n");
+	printk("|_____|_|\\__,_|\\___/|____/ \n");                
+	printk("\nLiuOS Starting...\n");
+}

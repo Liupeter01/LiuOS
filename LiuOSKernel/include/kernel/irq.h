@@ -10,7 +10,6 @@
 #define IRQ_H
 
 #include <stdint.h>
-#include <armv8-a/memlayout.h>
 #include <kernel/printk.h>
 #include <driver/uart.h>
 #include <kernel/timer.h>

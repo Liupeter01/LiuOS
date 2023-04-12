@@ -26,6 +26,11 @@
  */
 int printk(const char *fmt, ...);
 
+/**
+ * Prints startup message
+ * @see printk()
+ */
+void setupLogo();
 /** @} */
 
 #endif

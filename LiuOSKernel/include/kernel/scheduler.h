@@ -12,6 +12,18 @@
 #include <stdint.h>
 
 /**
+ * Task States
+ */
+enum proc_state{
+	TASK_RUNNING = 0,
+	TASK_RUNABLE = 1,
+	TASK_UNUSED = 2,
+	TASK_USED = 3,
+	TASK_SLEEPING = 4, 
+	TASK_ZOMBIE = 5
+};
+
+/**
  * Structure that contains values of all registers that might be different
  * between the tasks, that are being switched.
  * @note For **aarch64**: We don't save registers `x0 - x18` becuase they can be overwritten
@@ -36,6 +48,43 @@ typedef struct {
 	uint64_t pc;  /**< Program Counter */
 } cpu_context;
 
+typedef struct trapframe {
+  uint64_t x0;
+  uint64_t x1;
+  uint64_t x2;
+  uint64_t x3;
+  uint64_t x4;
+  uint64_t x5;
+  uint64_t x6;
+  uint64_t x7;
+  uint64_t x8;
+  uint64_t x9;
+  uint64_t x10;
+  uint64_t x11;
+  uint64_t x12;
+  uint64_t x13;
+  uint64_t x14;
+  uint64_t x15;
+  uint64_t x16;
+  uint64_t x17;
+  uint64_t x18;
+  uint64_t x19;
+  uint64_t x20;
+  uint64_t x21;
+  uint64_t x22;
+  uint64_t x23;
+  uint64_t x24;
+  uint64_t x25;
+  uint64_t x26;
+  uint64_t x27;
+  uint64_t x28;
+  uint64_t x29;
+  uint64_t x30;
+  uint64_t elr;
+  uint64_t spsr;
+  uint64_t sp;     
+}trapframe;
+
 /**
  * Structure that describes a process.
  * @details This struct has the following members:
@@ -50,6 +99,8 @@ typedef struct {
  */
 typedef struct {
 	cpu_context cpu_context; /**< A struct for the registers to be saved for the process. */
+	trapframe trapframe;	/*< use for system call!*/
+	//struct spainlock lock;
 	int64_t state; /**< The state of the currently running task. */
 	int64_t counter; /**< Used to determine how long the current task has been running. */
 	int64_t priority; /**< When a new task is scheduled its priority is copied to counter. */
@@ -57,14 +108,9 @@ typedef struct {
 } task_struct;
 
 /**
- * Task States
- */
-#define TASK_RUNNING 0
-/**
  * Maximum number of concurrent tasks
  */
 #define NR_TASKS 64
-
 
 /** Array that holds all the tasks. */
 extern task_struct *task[NR_TASKS];
@@ -85,12 +131,6 @@ extern int nr_tasks;
 #define LAST_TASK task[NR_TASKS-1]
 
 /**
- * Defines size of each process.
- * @details Equal to the Page size ( @ref PAGE_SIZE).
- */
-#define THREAD_SIZE 4096
-
-/**
  * Defines the init task's @ref task_struct ( @ref kernel_main()) that is run on kernel startup.
  * @details Fields:
  * - cpu_context: All registers initialized to 0.
@@ -101,7 +141,17 @@ extern int nr_tasks;
  *
  * @see task_struct, cpu_context, TASK_RUNNING
  */
-#define INIT_TASK { /*  cpu_context */ {0,0,0,0,0,0,0,0,0,0,0,0,0}, /* state etc */ 0,0,1,0 }
+#define INIT_TASK { \
+	/*  cpu_context */ {0,}, \
+	/*  trapframe */ {0,}, \
+	/* state etc */ TASK_RUNABLE,0,1,0 \
+}
+
+/**
+ * Defines size of each process.
+ * @details Equal to the Page size ( @ref PAGE_SIZE).
+ */
+#define THREAD_SIZE 4096
 
 /**
  * Starting point for each new task.

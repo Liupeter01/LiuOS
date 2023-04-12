@@ -115,26 +115,50 @@
 #define TCR_ORGN1(n)  (((n) & 0x3) << 26)
 #define TCR_SH1(n)    (((n) & 0x3) << 28)
 #define TCR_TG1(n)    (((n) & 0x3) << 30)
-#define TCR_IPS(n)    (((n) & 0x7) << 32)
+
+/*中间物理地址大小。
+000：32位,4GB；
+001：36位,64GB；
+010：40位,1TB;
+011：42位,4TB；
+100：44位，16TB；
+101：48位，256TB；
+110：52位，4PB*/
+#define TCR_IPS(n)    (((n) & 0x7) << 32)   
 #define TCR_AS        (1 << 36)
 #define TCR_TBI0      (1 << 37)
-#define TCR_ENABLE (TCR_T0SZ(25)|TCR_T1SZ(25)|TCR_TG0(0)|TCR_TG1(2)|TCR_IPS(0)| \
-                  TCR_IRGN0(1)|TCR_ORGN0(1)|TCR_SH0(3)| \
-                  TCR_IRGN1(1)|TCR_ORGN1(1)|TCR_SH1(3)| \
-                  TCR_AS|TCR_TBI0)
+#define TCR_TxSZ(x)		(TCR_T0SZ(x) | TCR_T1SZ(x))
 
+#define TCR_ENABLE ( \
+    TCR_TxSZ(25) | /*TTBRx_EL1寻址的内存区域大小偏移量*/\
+    TCR_TG0(0x02)| /*TTBR0_EL1的颗粒大小4KB*/\
+    TCR_TG1(0x02)| /*TTBR1_EL1的颗粒大小4KB*/\
+    TCR_IPS(0b100) \
+)
 
 // attribute index
 // index is set by mair_el1
-#define AI_DEVICE_nGnRnE_IDX  0
-#define AI_NORMAL_NC_IDX      1
-#define AI_NORMAL_CACHE_IDX   2
+#define AI_DEVICE_nGnRnE_IDX	0
+#define AI_DEVICE_nGnR_IDX		1
+#define AI_DEVICE_GRE_IDX		2
+#define AI_NORMAL_NC_IDX		3
+#define AI_NORMAL_IDX		    4
+#define AI_NORMAL_WT_IDX		5
 
-// memory type
-#define MT_DEVICE_nGnRnE  0x0
-#define MT_NORMAL_NC      0x44
-#define MT_NORMAL_CACHE   0xff
-#define MAIR_ENABLE  ((MT_DEVICE_nGnRnE<<(8*AI_DEVICE_nGnRnE_IDX)) | (MT_NORMAL_NC<<(8*AI_NORMAL_NC_IDX)) | \
-                  (MT_NORMAL_CACHE<<(8*AI_NORMAL_CACHE_IDX)))
+#define MT_DEVICE_nGnRnE	0x00UL
+#define MT_DEVICE_nGnRE		0x04UL
+#define MT_DEVICE_GRE		0x0CUL
+#define MT_NORMAL_NC		0x44UL
+#define MT_NORMAL		    0xFFUL
+#define MT_NORMAL_WT		0xBBUL
+
+#define MAIR_ENABLE ( \
+    (MT_DEVICE_nGnRnE << (8*AI_DEVICE_nGnRnE_IDX)) | \
+    (MT_DEVICE_nGnRE << (8*AI_DEVICE_nGnR_IDX)) | \
+    (MT_DEVICE_GRE << (8*AI_DEVICE_GRE_IDX)) | \
+    (MT_NORMAL_NC << (8*AI_NORMAL_NC_IDX)) | \
+    (MT_NORMAL << (8*AI_NORMAL_IDX)) | \
+    (MT_NORMAL_WT << (8*AI_NORMAL_WT_IDX)) \
+)
 
 #endif

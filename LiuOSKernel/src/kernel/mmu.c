@@ -14,7 +14,7 @@
  */
 static unsigned short mem_map [PAGING_PAGES] = {0,};
 
-uint64_t 
+unsigned long long
 get_free_page()
 {
 	/* Iterate over all available memory pages */
@@ -36,3 +36,4 @@ free_page(uint64_t p)
 	/* Mark page as free */
 	mem_map[(p - LOW_MEMORY) / PAGE_SIZE] = 0;
 }
+

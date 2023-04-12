@@ -3,54 +3,65 @@ OUTPUT_ARCH(aarch64)
 ENTRY(_start)
 
 PHY_START = 0x80000;
-KERNERL_BASE = 0xFFFFFFFF00000000;
-INIT_STACK_SIZE = 0x1000;
+KERNERL_BASE = 0xffffff8000000000	;
+/*INIT_STACK_SIZE = 0x1000;*/
 
 SECTIONS
 {
-    . = PHY_START; /*程序链接地址=加载地址*/
-    .text : 
+    . = PHY_START;
+    .init : {
+       PROVIDE (__start_init = .);
+       KEEP(*(.text.boot))
+        . = ALIGN(16);
+        PROVIDE (__bss_start = .);
+
+        /*. += INIT_STACK_SIZE;       /*预留栈空间的大小为4096B*/
+        /*PROVIDE(init_stktop = .);   /*预留的SP指针物理地址位置，栈向低地址生长*/
+
+        PROVIDE (__bss_end = .);
+
+        . = ALIGN(0x1000);
+        /*初始阶段的页表（PGD/PUD/PMD/PTE）都是排列在一起的，每一个占用一个page*/
+        idmap_pg_dir = .;
+        . += 0x1000;
+        /* 内核PUD页表，PUD有512个条目，每个条目8B*/
+        swapper_pg_dir = .;
+        . += 0x1000;
+
+        _U_l2_pgtbl = .;
+        . += 0x4000;
+        /*内核PMD页表，PUD有512个条目，指向512个大小为4096B的PMD*/
+        _K_l2_pgtbl = .;
+        . += 0x4000;
+
+        _D_l2_pgtbl = .;
+        . += 0x4000;
+        
+        __end_init = .;
+    }
+
+    . = PHY_START + KERNERL_BASE; 
+     PROVIDE (__start_kernel = .);
+    .text : AT(__end_init)
     { 
-      KEEP(*(.text.boot))
-       *(.text .text.* .gnu.linkonce.t*) 
+        EXCLUDE_FILE (*build/boot_s.o) *(.text .text.*) 
     }
     .rodata : 
     { 
-      *(.rodata .rodata.* .gnu.linkonce.r*) 
+       EXCLUDE_FILE (*build/boot_s.o) *(.rodata .rodata.*) 
     }
     . = ALIGN(4096);
-    PROVIDE(_data = .);
     .data : 
     { 
-      *(.data .data.* .gnu.linkonce.d*) 
+       EXCLUDE_FILE (*build/boot_s.o) *(.data .data.*) 
     }
     .bss : 
     {
         . = ALIGN(16);
-        __bss_start = .;
-        *(.bss .bss.*)
-        *(COMMON)
-        __bss_end = .;
-        
-      /*linker.ld*/
-      . += INIT_STACK_SIZE;       /*预留栈空间的大小为4096B*/
-      PROVIDE(init_stktop = .);   /*预留的SP指针物理地址位置，栈向低地址生长*/
-
-      . = ALIGN(0x1000);
-      /* 内核PUD页表，PUD有512个条目，每个条目8B*/
-      PROVIDE (_kernel_pgtbl = .);
-      . += 0x1000;
-     /* 用户PUD页表，存储原理同上*/
-      PROVIDE (_user_pgtbl = .);
-       . += 0x1000;
-      /*内核PMD页表，PUD有512个条目，指向512个大小为4096B的PMD*/
-      PROVIDE (_K_l2_pgtbl = .);
-      . += 0x200000;
-      /*用户PMD页表，PUD有512个条目，指向512个大小为4096B的PMD*/
-      PROVIDE (_U_l2_pgtbl = .);
-      . += 0x200000;
+        EXCLUDE_FILE (*build/boot_s.o) *(.bss .bss.*)
     }
     . = ALIGN(4096);
-    PROVIDE (__end = .);
+    __end_kernel = .;
 }
 __bss_size = ( __bss_end - __bss_start) >> 3;
+__kernel_size = __end_kernel - __start_kernel;

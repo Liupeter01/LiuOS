@@ -9,9 +9,6 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <common/string.h>
-#include <common/stdlib.h>
-#include <armv8-a/aarch64.h>
 #include <driver/uart.h>
 
 #include <kernel/printk.h>
