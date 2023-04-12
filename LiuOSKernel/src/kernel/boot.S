@@ -85,7 +85,7 @@ create_identical_mapping:
 	lsr x4, x2, #21						//计算__end_init PMD偏移  >> 21		
 	and x4, x4, #0x1FF					//x3 & 1FF							//PMD 1
 
-	/*用于计算PMD(L2)页表的下标*/
+	/*用于计算PMD(L2)页表的属性*/
 	ldr x5 , =NORMAL_MEMORY_BLOCK_MAPPING //block entry
 	and x7, x1, #PMD_MASK				//phys = phys & PMD_MASK
 
@@ -114,26 +114,26 @@ create_kernel_linear:
 	ldr x4, =(KERNBASE + PHY_START) 		//start va
 	add x5, x4, x3						// end va
 
-
+	/*用于计算PMD(L2)页表的下标*/
 	lsr x6, x4, #PXSHIFT(2)				//计算__start_kernel  
 	and x6, x6, #0x1FF					//x6 & 1FF				//PMD偏移 0
-
 	lsr x7, x5, #PXSHIFT(2)				//计算__end_kernel 
 	and x7, x7, #0x1FF					//x7 & 1FF				// PMD偏移 1
 
-	//mov x8 , #BLOCK_ENTRY_PTE	 		//attribute
-	mov x8 , #0b01	 					//attribute(0b01)
-	orr x9, x1, x8						//段入口(结合属性和物理地址)
+	/*用于计算PMD(L2)页表的属性*/
+	ldr x8 , =NORMAL_MEMORY_BLOCK_MAPPING //block entry
+	and x9, x1, #PMD_MASK				//phys = phys & PMD_MASK
 
 linear_segment_loop:
-	str x9 ,[x0, x6 , lsl #3]			//_K_l2_pgtbl[x6 * 8] = x9
+	orr x10, x8, x9						//段入口(结合属性和物理地址)
+	str x10 ,[x0, x6 , lsl #3]			//_K_l2_pgtbl[x6 * 8] = x10
 	add x6 ,x6 ,#1						//x6 += 1
 	add x9 ,x9 ,#INIT_KERN_SZ			//X9 += 0x200000
 	cmp x6, x7
 	b.ls linear_segment_loop			//__start_kernel < __end_kernel
 
 	adrp x0, swapper_pg_dir				//KERNEL L1 PGD(0~1)
-	lsr x5, x4 , #PXSHIFT(0)			//访问PGD编号(511)
+	lsr x5, x4 ,#PXSHIFT(1)			    //访问PGD编号(511)
 	and x5, x5, #PXMASK					//x5 & 1FF				//PGD[511]
 
 	mov x6, #(PTE_TABLE | PTE_VALID)    // entry attr
